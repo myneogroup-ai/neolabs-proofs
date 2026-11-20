@@ -174,8 +174,9 @@ export async function checkPack(read) {
           try { bundle = JSON.parse(text(bytes)); } catch { bundle = null; }
           const want = btoa(String.fromCharCode(...hexBytes(digest)));
           // The digest is carried either by the message signature (base64) or by the Rekor entry of the bundle
-          // (a hashedrekord body, base64 JSON naming the SHA-256 in hexadecimal), depending on the bundle version.
-          const bodies = (bundle?.verificationMaterial?.tlogEntries ?? []).map((entry) => { try { return atob(entry.canonicalizedBody ?? ''); } catch { return ''; } });
+          // (a hashedrekord body, base64 JSON naming the SHA-256 in hexadecimal; `rekorBundle.Payload.body` in the cosign 2
+          // layout, `verificationMaterial.tlogEntries` in the newer one), depending on the bundle version.
+          const bodies = [...(bundle?.verificationMaterial?.tlogEntries ?? []), { canonicalizedBody: bundle?.rekorBundle?.Payload?.body }].map((entry) => { try { return atob(entry.canonicalizedBody ?? ''); } catch { return ''; } });
           const b64 = bundle?.messageSignature?.messageDigest?.digest === want || bodies.some((body) => body.includes(digest)) ? want : null;
           if (b64 !== want) { status = 'discrepancy'; detail = `The Sigstore bundle ${proof.file} signs another content than this manifest.`; }
           else detail = `${detail} The bundle signs the fingerprint of this manifest. The signer identity and the Rekor inclusion are verified by the workflow; to repeat it: ${proof.verify_command ?? 'cosign verify-blob'}`.trim();
