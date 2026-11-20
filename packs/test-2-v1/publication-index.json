@@ -1,7 +1,7 @@
 {
   "schema": "neolabs.publication-index/1",
   "manifest_sha256": "a58336b0134bd4387051c185113ee187fdbfe2b28edeae29be7276a82a08cea0",
-  "updated_at": "2026-11-20T08:33:06.571Z",
+  "updated_at": "2026-11-20T09:33:35.186Z",
   "proofs": [
     {
       "provider": "FreeTSA",
@@ -16,11 +16,12 @@
     {
       "provider": "OpenTimestamps (Bitcoin)",
       "group": "date",
-      "status": "pending",
+      "status": "verified",
       "file": "proofs/manifest.jcs.ots",
       "must_contain_manifest_digest": true,
-      "detail": "Submitted to the public calendars; awaiting confirmation in a Bitcoin block.",
-      "checked_at": "2026-11-20T08:33:06Z"
+      "detail": "The proof commits the manifest to Bitcoin block 976709. Check it on your own node: ots verify proofs/manifest.jcs.ots",
+      "url": "https://blockstream.info/block-height/976709",
+      "checked_at": "2026-11-20T09:33:35Z"
     },
     {
       "provider": "Sigstore (Fulcio, Rekor)",
