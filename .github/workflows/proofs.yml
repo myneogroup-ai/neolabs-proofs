@@ -117,7 +117,7 @@ jobs:
       - name: Verify again, then commit the proofs
         run: |
           set -euo pipefail
-          for pack in packs/*/; do node verify/cli.mjs verify "$pack"; done
+          for pack in packs/*/; do node verify/cli.mjs verify "$pack" || { echo 'Structure of the Sigstore bundle, for diagnosis:'; jq -c '[paths(scalars) | map(tostring) | join(".")]' "$pack/proofs/manifest.sigstore.json" || true; exit 1; }; done
           git config user.name 'neolabs-proofs[bot]'
           git config user.email 'neolabs-proofs@users.noreply.github.com'
           git add packs

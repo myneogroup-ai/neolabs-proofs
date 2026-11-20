@@ -145,6 +145,8 @@ test('external proofs keep their real state: pending, verified, a signature file
   good.files.set('freetsa.tsr', new Uint8Array(40));
   checks = (await checkPack(reader(good.files))).checks;
   assert.equal(statusOf(checks, 'ext:Sigstore'), 'discrepancy', 'a signature of another manifest');
+  good.files.set('manifest.sigstore.json', enc.encode(JSON.stringify({ verificationMaterial: { tlogEntries: [{ canonicalizedBody: Buffer.from(JSON.stringify({ kind: 'hashedrekord', spec: { data: { hash: { algorithm: 'sha256', value: good.digest } } } })).toString('base64') }] }, messageSignature: { signature: 'x' } })));
+  assert.equal(statusOf((await checkPack(reader(good.files))).checks, 'ext:Sigstore'), 'verified', 'a bundle that names the manifest in its Rekor entry');
   assert.equal(statusOf(checks, 'ext:Zenodo and DataCite'), 'discrepancy', 'a DOI that is not the one recorded');
   assert.equal(statusOf(checks, 'ext:FreeTSA'), 'discrepancy');
 });
