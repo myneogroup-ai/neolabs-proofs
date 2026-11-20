@@ -40,7 +40,8 @@ function render(root, base, result) {
       section.append(el('p', { class: 'nv-meta' }, `LILI: ${v.lili?.commit ?? 'not recorded'} · scorer: ${v.scorer?.name ?? ''} ${v.scorer?.commit ?? v.scorer?.version ?? ''} · task set: ${manifest.campaign?.task_set_version ?? ''}`));
       if (manifest.previous_manifest_sha256) {
         const previous = base ? base.replace(/pack(-v\d+)?\/$/, `pack-v${manifest.manifest_version - 1}/`) : '';
-        section.append(el('p', { class: 'nv-meta' }, `Version ${manifest.manifest_version} of this pack. It replaces the manifest ${manifest.previous_manifest_sha256}. `, previous ? el('a', { href: `?pack=${previous}` }, 'Verify the previous version') : ''));
+        const previousPage = document.body.dataset.previous || (previous ? `?pack=${previous}` : '');
+        section.append(el('p', { class: 'nv-meta' }, `Version ${manifest.manifest_version} of this pack. It replaces the manifest ${manifest.previous_manifest_sha256}. `, previousPage ? el('a', { href: previousPage }, 'Verify the previous version') : ''));
         for (const item of manifest.corrections ?? []) section.append(el('p', { class: 'nv-meta' }, `Correction of ${item.date}: ${item.what} Figures changed: ${item.figures_changed ? 'yes' : 'no'}. Results changed: ${item.results_changed ? 'yes' : 'no'}.`));
       }
       section.append(el('p', { class: 'nv-meta' }, `Execution declared by NEO AI: ${manifest.campaign?.declared_started_at ?? '?'} to ${manifest.campaign?.declared_finished_at ?? '?'} · pack generated: ${manifest.generated_at}`));
@@ -64,8 +65,9 @@ async function run(root, read, base) {
 export function start() {
   const root = document.getElementById('nv-out');
   // getAll, not get: the i18n check of lilineo.com reads get('...') as a translation key.
-  const base = new URLSearchParams(location.search).getAll('pack')[0] ?? document.body.dataset.pack ?? '';
-  const safe = /^\/neolabs\/proof\/[a-z0-9-]+\/pack(-v\d+)?\/$/.test(base) ? base : '';
+  // The programme moved from /neolabs/ to /evaluations/ on 2026-11-20: a former pack address is read at its new place.
+  const base = (new URLSearchParams(location.search).getAll('pack')[0] ?? document.body.dataset.pack ?? '').replace(/^\/neolabs\//, '/evaluations/');
+  const safe = /^\/evaluations\/proof\/[a-z0-9-]+\/pack(-v\d+)?\/$/.test(base) ? base : '';
   if (safe !== '') run(root, async (path) => { const response = await fetch(`${safe}${path}`, { cache: 'no-store' }); return response.ok ? new Uint8Array(await response.arrayBuffer()) : null; }, safe);
   else root.replaceChildren(el('p', { class: 'nv-hint' }, 'Choose the folder of a downloaded evidence pack to verify it on this device.'));
   document.getElementById('nv-folder').addEventListener('change', (event) => {

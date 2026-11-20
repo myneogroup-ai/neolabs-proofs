@@ -1,6 +1,6 @@
-# NEOLABS proofs
+# NEO AI Evaluations - public proofs (formerly NEOLABS proofs)
 
-Public evidence packs of the Official LILI Capability Tests of NEO AI (https://lilineo.com/neolabs/), and the code
+Public evidence packs of the Official LILI Capability Tests of NEO AI (https://lilineo.com/evaluations/; the programme was named NEOLABS until 20 November 2026), and the code
 that verifies them. Nothing here calls an AI model.
 
 - `packs/<test>/manifest.json` - what was tested, every file with its SHA-256, the published figures and their rules.
