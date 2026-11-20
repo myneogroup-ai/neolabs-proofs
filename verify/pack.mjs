@@ -39,7 +39,7 @@ function contains(haystack, needle) {
 }
 
 /** Builds the manifest of a test. `files` is [{ path, role, bytes }]; `results` the public results document. */
-export async function buildManifest({ test, campaign, versions, files, results, ledger, timestamps, costs, limits, generated_at, previous_manifest_sha256 = null, manifest_version = 1 }) {
+export async function buildManifest({ test, campaign, versions, files, results, ledger, timestamps, costs, limits, generated_at, previous_manifest_sha256 = null, manifest_version = 1, corrections = undefined }) {
   const recomputed = score(results);
   const inventory = [];
   for (const file of [...files].sort((a, b) => (a.path < b.path ? -1 : 1))) inventory.push({ path: file.path, role: file.role, bytes: file.bytes.length, sha256: await sha256(file.bytes) });
@@ -47,6 +47,8 @@ export async function buildManifest({ test, campaign, versions, files, results, 
     schema: MANIFEST_SCHEMA,
     manifest_version,
     previous_manifest_sha256,
+    // What changed since the previous manifest, when this one corrects it (absent on a first version).
+    ...(corrections === undefined ? {} : { corrections }),
     generated_at,
     test,
     campaign,

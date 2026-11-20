@@ -1,8 +1,16 @@
 {
   "schema": "neolabs.manifest/1",
-  "manifest_version": 1,
-  "previous_manifest_sha256": null,
-  "generated_at": "2026-11-20T06:40:00.000Z",
+  "manifest_version": 2,
+  "previous_manifest_sha256": "a58336b0134bd4387051c185113ee187fdbfe2b28edeae29be7276a82a08cea0",
+  "corrections": [
+    {
+      "date": "2026-11-20",
+      "what": "Report text only (Public Edition PDF): the six comparisons not shown besides judged quality are the exact-match comparisons, not time-to-first-text comparisons.",
+      "figures_changed": false,
+      "results_changed": false
+    }
+  ],
+  "generated_at": "2026-11-20T08:45:00.000Z",
   "test": {
     "id": "test-2",
     "number": 2,
@@ -64,8 +72,8 @@
     {
       "path": "neolabs-official-test-2-public-edition.pdf",
       "role": "Report, Public Edition",
-      "bytes": 802048,
-      "sha256": "149736a95c717e5482c5060c1168e5dbceff79dfe2cbf6fcd5bccf1ea5e2362b"
+      "bytes": 819117,
+      "sha256": "108b44330f0d5a81b566d14bb8f067980720c09e053368943ec15c74a6915779"
     },
     {
       "path": "results.json",
