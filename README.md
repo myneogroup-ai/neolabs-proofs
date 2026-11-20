@@ -15,4 +15,7 @@ What a pack proves: the files are the ones NEO AI sealed, at the attested dates,
 correct aggregation of the per-task results. What it does not prove: the reviewers' scores are the judgement of AI
 models, recorded at the time; an independent validation of performance has not been performed.
 
-Copyright NEO AI. All rights reserved until a licence is published in this repository.
+## Licence
+
+The code (`verify/`, the workflow) is under the MIT licence (`LICENSE`). The data of the packs are under
+CC BY 4.0 (`LICENSE-DATA.md`). The PDF reports remain all rights reserved by NEO AI.
