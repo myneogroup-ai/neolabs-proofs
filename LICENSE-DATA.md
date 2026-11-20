@@ -4,7 +4,7 @@ The data of the evidence packs (`packs/*/results.json`, `packs/*/manifest.json`,
 are licensed under the Creative Commons Attribution 4.0 International licence (SPDX: CC-BY-4.0).
 Full text: https://creativecommons.org/licenses/by/4.0/legalcode
 
-Attribution: "NEOLABS Official LILI Capability Tests, NEO AI (NEO TECH LABS TECHNOLOGY L.L.C.), https://lilineo.com/neolabs/".
+Attribution: "NEO AI Evaluations (formerly NEOLABS), Official LILI Capability Tests, NEO AI (NEO TECH LABS TECHNOLOGY L.L.C.), https://lilineo.com/evaluations/".
 
 Not covered by this licence: the reports in PDF (all rights reserved by NEO TECH LABS TECHNOLOGY L.L.C.), the proof files issued by third
 parties (time-stamp tokens, certificates, signature bundles), and the names and marks of NEO AI and of the reference
