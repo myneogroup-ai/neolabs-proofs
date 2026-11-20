@@ -1,0 +1,124 @@
+# NEOLABS evidence packs: verify, sign, time-stamp, attest. Runs in the PUBLIC proof repository on standard
+# GitHub-hosted runners (free for a public repository). No inference key, no model call, no private file.
+# Each external proof is recorded in packs/<test>/publication-index.json with its real state; a provider is never
+# published twice for one manifest (cli.mjs plan), so a run interrupted by a provider failure can simply run again.
+name: proofs
+on:
+  push:
+    branches: [main]
+    paths: ['packs/**', 'verify/**', '.github/workflows/proofs.yml']
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      archive:
+        description: 'Ask Software Heritage to archive this repository (a permanent public record): type yes'
+        required: false
+        default: 'no'
+  schedule:
+    - cron: '17 */6 * * *'   # follows the proofs that are still pending (OpenTimestamps confirmation)
+
+permissions:
+  contents: read
+
+concurrency:
+  group: proofs-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Tests of the scorer and of the checks (no network)
+        run: node --test verify/test/*.test.mjs
+      - name: Verify every pack (a discrepancy fails the publication)
+        run: |
+          set -euo pipefail
+          for pack in packs/*/; do echo "== $pack"; node verify/cli.mjs verify "$pack"; done
+
+  prove:
+    needs: verify
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write        # commits the proofs and the publication index
+      id-token: write        # Sigstore keyless signature with the identity of this workflow
+      attestations: write    # GitHub artifact attestation of the scorer
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - uses: sigstore/cosign-installer@v3
+      - name: OpenTimestamps client
+        run: pip install --quiet opentimestamps-client
+      - name: Sign and time-stamp each manifest
+        env:
+          IDENTITY: https://github.com/${{ github.repository }}/.github/workflows/proofs.yml@refs/heads/main
+        run: |
+          set -uo pipefail
+          now() { date -u +%Y-%m-%dT%H:%M:%SZ; }
+          for pack in packs/*/; do
+            pack="${pack%/}"; mkdir -p "$pack/proofs"
+            node verify/cli.mjs canonical "$pack/manifest.json" > "$pack/proofs/manifest.jcs"
+            digest="$(node verify/cli.mjs digest "$pack/manifest.json")"
+            echo "== $pack manifest $digest"
+
+            # Sigstore: Fulcio certificate for this workflow, signature and inclusion in the Rekor log.
+            if [ "$(node verify/cli.mjs plan "$pack" 'Sigstore (Fulcio, Rekor)')" != skip ]; then
+              if cosign sign-blob --yes --bundle "$pack/proofs/manifest.sigstore.json" "$pack/proofs/manifest.jcs" >/dev/null \
+                 && cosign verify-blob --bundle "$pack/proofs/manifest.sigstore.json" --certificate-identity "$IDENTITY" --certificate-oidc-issuer https://token.actions.githubusercontent.com "$pack/proofs/manifest.jcs"; then
+                node verify/cli.mjs proof "$pack" "{\"provider\":\"Sigstore (Fulcio, Rekor)\",\"group\":\"integrity\",\"status\":\"verified\",\"kind\":\"sigstore-bundle\",\"file\":\"proofs/manifest.sigstore.json\",\"detail\":\"Signed by the workflow $IDENTITY; inclusion in Rekor verified.\",\"verify_command\":\"cosign verify-blob --bundle proofs/manifest.sigstore.json --certificate-identity $IDENTITY --certificate-oidc-issuer https://token.actions.githubusercontent.com proofs/manifest.jcs\",\"checked_at\":\"$(now)\"}"
+              else
+                node verify/cli.mjs proof "$pack" "{\"provider\":\"Sigstore (Fulcio, Rekor)\",\"group\":\"integrity\",\"status\":\"insufficient\",\"detail\":\"The signature could not be produced or verified on the last run; it is tried again on the next one.\",\"checked_at\":\"$(now)\"}"
+              fi
+            fi
+
+            # FreeTSA: a free RFC 3161 time-stamp of the manifest, verified against FreeTSA's own certificates.
+            if [ "$(node verify/cli.mjs plan "$pack" 'FreeTSA')" != skip ]; then
+              if openssl ts -query -data "$pack/proofs/manifest.jcs" -sha256 -cert -no_nonce -out /tmp/req.tsq \
+                 && curl -fsS --retry 3 --max-time 60 -H 'Content-Type: application/timestamp-query' --data-binary @/tmp/req.tsq https://freetsa.org/tsr -o "$pack/proofs/freetsa.tsr" \
+                 && curl -fsS --retry 3 --max-time 60 https://freetsa.org/files/cacert.pem -o "$pack/proofs/freetsa-cacert.pem" \
+                 && curl -fsS --retry 3 --max-time 60 https://freetsa.org/files/tsa.crt -o "$pack/proofs/freetsa-tsa.crt" \
+                 && openssl ts -verify -data "$pack/proofs/manifest.jcs" -in "$pack/proofs/freetsa.tsr" -CAfile "$pack/proofs/freetsa-cacert.pem" -untrusted "$pack/proofs/freetsa-tsa.crt"; then
+                node verify/cli.mjs proof "$pack" "{\"provider\":\"FreeTSA\",\"group\":\"date\",\"status\":\"verified\",\"file\":\"proofs/freetsa.tsr\",\"must_contain_manifest_digest\":true,\"detail\":\"RFC 3161 time-stamp of the manifest by FreeTSA (a free, community authority; complementary to the DigiCert time-stamp of the ledger).\",\"verify_command\":\"openssl ts -verify -data proofs/manifest.jcs -in proofs/freetsa.tsr -CAfile proofs/freetsa-cacert.pem -untrusted proofs/freetsa-tsa.crt\",\"checked_at\":\"$(now)\"}"
+              else
+                rm -f "$pack/proofs/freetsa.tsr"
+                node verify/cli.mjs proof "$pack" "{\"provider\":\"FreeTSA\",\"group\":\"date\",\"status\":\"insufficient\",\"detail\":\"FreeTSA did not answer or its token did not verify on the last run; it is tried again on the next one.\",\"checked_at\":\"$(now)\"}"
+              fi
+            fi
+
+            # OpenTimestamps: submitted once to the public calendars, then followed until a Bitcoin block confirms it.
+            plan="$(node verify/cli.mjs plan "$pack" 'OpenTimestamps (Bitcoin)')"
+            if [ "$plan" = create ] && [ ! -f "$pack/proofs/manifest.jcs.ots" ]; then
+              ots stamp "$pack/proofs/manifest.jcs" || true
+            fi
+            if [ "$plan" != skip ] && [ -f "$pack/proofs/manifest.jcs.ots" ]; then
+              ots upgrade "$pack/proofs/manifest.jcs.ots" || true
+              rm -f "$pack/proofs/manifest.jcs.ots.bak"
+              height="$(ots info "$pack/proofs/manifest.jcs.ots" 2>/dev/null | sed -n 's/.*BitcoinBlockHeaderAttestation(\([0-9]*\)).*/\1/p' | head -1)"
+              if [ -n "$height" ]; then
+                node verify/cli.mjs proof "$pack" "{\"provider\":\"OpenTimestamps (Bitcoin)\",\"group\":\"date\",\"status\":\"verified\",\"file\":\"proofs/manifest.jcs.ots\",\"must_contain_manifest_digest\":true,\"detail\":\"The proof commits the manifest to Bitcoin block $height. Check it on your own node: ots verify proofs/manifest.jcs.ots\",\"url\":\"https://blockstream.info/block-height/$height\",\"checked_at\":\"$(now)\"}"
+              else
+                node verify/cli.mjs proof "$pack" "{\"provider\":\"OpenTimestamps (Bitcoin)\",\"group\":\"date\",\"status\":\"pending\",\"file\":\"proofs/manifest.jcs.ots\",\"must_contain_manifest_digest\":true,\"detail\":\"Submitted to the public calendars; awaiting confirmation in a Bitcoin block.\",\"checked_at\":\"$(now)\"}"
+              fi
+            fi
+          done
+      - name: Attest the provenance of the published scorer
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: 'verify/*.mjs'
+      - name: Ask Software Heritage to archive this repository
+        # A permanent record: only on a manual run that asks for it (Founder's go, ADR-0092).
+        if: github.event_name == 'workflow_dispatch' && inputs.archive == 'yes'
+        continue-on-error: true
+        run: curl -fsS --max-time 60 -X POST "https://archive.softwareheritage.org/api/1/origin/save/git/url/https://github.com/${{ github.repository }}/" | head -c 600
+      - name: Verify again, then commit the proofs
+        run: |
+          set -euo pipefail
+          for pack in packs/*/; do node verify/cli.mjs verify "$pack"; done
+          git config user.name 'neolabs-proofs[bot]'
+          git config user.email 'neolabs-proofs@users.noreply.github.com'
+          git add packs
+          git diff --cached --quiet || { git commit -m 'Record external proofs in the publication index [skip ci]'; git push; }
