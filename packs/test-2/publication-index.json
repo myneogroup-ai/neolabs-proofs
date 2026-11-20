@@ -1,7 +1,7 @@
 {
   "schema": "neolabs.publication-index/1",
   "manifest_sha256": "a58336b0134bd4387051c185113ee187fdbfe2b28edeae29be7276a82a08cea0",
-  "updated_at": "2026-11-20T07:13:59.484Z",
+  "updated_at": "2026-11-20T08:14:53.389Z",
   "proofs": [
     {
       "provider": "FreeTSA",
@@ -20,7 +20,7 @@
       "file": "proofs/manifest.jcs.ots",
       "must_contain_manifest_digest": true,
       "detail": "Submitted to the public calendars; awaiting confirmation in a Bitcoin block.",
-      "checked_at": "2026-11-20T07:13:59Z"
+      "checked_at": "2026-11-20T08:14:53Z"
     },
     {
       "provider": "Sigstore (Fulcio, Rekor)",
