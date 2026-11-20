@@ -18,4 +18,4 @@ models, recorded at the time; an independent validation of performance has not b
 ## Licence
 
 The code (`verify/`, the workflow) is under the MIT licence (`LICENSE`). The data of the packs are under
-CC BY 4.0 (`LICENSE-DATA.md`). The PDF reports remain all rights reserved by NEO AI.
+CC BY 4.0 (`LICENSE-DATA.md`). The PDF reports remain all rights reserved by NEO TECH LABS TECHNOLOGY L.L.C.
