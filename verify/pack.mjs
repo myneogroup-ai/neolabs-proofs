@@ -10,7 +10,9 @@
 // with the command that verifies it.
 
 import { bytesOf, canonicalize, hex, sha256 } from './jcs.mjs';
+import { randomnessMatches, readBeacon } from './drand.mjs';
 import { merkleRoot } from './merkle.mjs';
+import { drawSample } from './sample.mjs';
 import { differences, publishedOf, score } from './score.mjs';
 
 export const MANIFEST_SCHEMA = 'neolabs.manifest/1';
@@ -182,6 +184,25 @@ export async function checkPack(read) {
           const b64 = bundle?.messageSignature?.messageDigest?.digest === want || bodies.some((body) => body.includes(digest)) ? want : null;
           if (b64 !== want) { status = 'discrepancy'; detail = `The Sigstore bundle ${proof.file} signs another content than this manifest.`; }
           else detail = `${detail} The bundle signs the fingerprint of this manifest. The signer identity and the Rekor inclusion are verified by the workflow; to repeat it: ${proof.verify_command ?? 'cosign verify-blob'}`.trim();
+        }
+        else if (proof.kind === 'drand-beacon') {
+          // The round of the public draw, recorded after the manifest was sealed. Checked here: the round is the one
+          // the manifest fixed in advance, the randomness is the SHA-256 of the signature, and the sample is the one
+          // this randomness draws. The League of Entropy's signature itself is checked by the workflow (pairing).
+          let value = null;
+          try { value = JSON.parse(text(bytes)); } catch { value = null; }
+          const { beacon, reason } = readBeacon(value);
+          const declared = manifest.campaign?.public_sample ?? {};
+          if (beacon === null) { status = 'discrepancy'; detail = reason; }
+          else if (!Number.isSafeInteger(declared.round) || !Number.isSafeInteger(declared.size)) { status = 'discrepancy'; detail = 'The manifest fixed no round and no sample size before the campaign: a draw cannot be attached to it afterwards.'; }
+          else if (beacon.round !== declared.round) { status = 'discrepancy'; detail = `The beacon is round ${String(beacon.round)}; the manifest fixed round ${String(declared.round)}.`; }
+          else if (!(await randomnessMatches(beacon))) { status = 'discrepancy'; detail = `The randomness of round ${String(beacon.round)} is not the SHA-256 of its signature.`; }
+          else {
+            const drawn = await drawSample(manifest.results?.tasks ?? [], beacon.randomness, declared.size);
+            const recorded = Array.isArray(proof.sample) ? proof.sample : null;
+            if (recorded !== null && JSON.stringify(recorded) !== JSON.stringify(drawn)) { status = 'discrepancy'; detail = `The index records the sample ${recorded.join(', ')}; round ${String(beacon.round)} draws ${drawn.join(', ')}.`; }
+            else detail = `Round ${String(beacon.round)}, fixed by the manifest before the draw, gives the sample of ${String(declared.size)}: ${drawn.join(', ')}. The randomness is the SHA-256 of the signature. The signature of the League of Entropy is verified by the workflow; to repeat it: ${proof.verify_command ?? 'node verify/cli.mjs drand <beacon.json> <chain.json>'}`;
+          }
         }
         else if (proof.must_name_manifest_digest === true && !text(bytes).includes(digest)) { status = 'discrepancy'; detail = `The record ${proof.file} does not name the fingerprint of this manifest.`; }
         else if (proof.doi !== undefined) {

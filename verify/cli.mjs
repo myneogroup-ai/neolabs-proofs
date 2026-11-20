@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// cli.mjs - NEOLABS evidence packs from the command line. No dependency, no network, no model call.
+// cli.mjs - NEOLABS evidence packs from the command line. No dependency, no model call; no network except `deposit`.
 //   node cli.mjs verify <folder>            runs every check; exit 1 on a discrepancy
 //   node cli.mjs build <config.json> <out>  writes manifest.json, results.json and an empty publication index
 //   node cli.mjs digest <manifest.json>     prints the SHA-256 of the RFC 8785 form of a manifest
@@ -7,6 +7,8 @@
 //   node cli.mjs plan <folder> <provider>   create | follow | skip: a provider is never published twice per manifest
 //   node cli.mjs proof <folder> '<json>'    records one external proof in the publication index
 //   node cli.mjs sample <ids.json> <randomness-hex> <size>   the public sample of a drand round
+//   node cli.mjs drand <beacon.json> <chain.json>   checks a drand round (needs `npm install @noble/curves` for the signature)
+//   node cli.mjs deposit <folder> <api-base> [repo-url]   deposits the pack in Zenodo or its sandbox (token: DEPOSIT_TOKEN)
 import { mkdirSync, readFileSync, writeFileSync, existsSync, copyFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { canonicalize } from './jcs.mjs';
@@ -66,8 +68,24 @@ async function main(argv) {
     writeFileSync(indexPath, `${JSON.stringify(withProof(index, digest, proof, args[2] ?? new Date().toISOString()), null, 2)}\n`);
     return 0;
   }
+  if (command === 'drand') {
+    // node cli.mjs drand <beacon.json> <chain.json>: 0 verified, 1 discrepancy, 3 not checked (no pairing library).
+    const { verifyBeacon } = await import('./drand.mjs');
+    let bls = null;
+    try { ({ bls12_381: bls } = await import(process.env.NEOLABS_BLS_MODULE ?? '@noble/curves/bls12-381')); } catch { bls = null; }
+    const result = await verifyBeacon(JSON.parse(readFileSync(args[1], 'utf8')), JSON.parse(readFileSync(args[0], 'utf8')), bls);
+    console.log(`${LABEL[result.status]} ${result.detail}`);
+    return result.status === 'verified' ? 0 : result.status === 'discrepancy' ? 1 : 3;
+  }
+  if (command === 'deposit') {
+    // node cli.mjs deposit <folder> <api-base> [repository-url]: the token comes from DEPOSIT_TOKEN, never from an argument.
+    const { deposit } = await import('./deposit.mjs');
+    const record = await deposit({ api: args[1], token: process.env.DEPOSIT_TOKEN ?? '', repository: args[2] ?? null, read: async (path) => (existsSync(join(args[0], path)) ? new Uint8Array(readFileSync(join(args[0], path))) : null) });
+    console.log(JSON.stringify(record, null, 2));
+    return 0;
+  }
   if (command === 'sample') { console.log(JSON.stringify(await drawSample(JSON.parse(readFileSync(args[0], 'utf8')), args[1], Number(args[2])))); return 0; }
-  console.error('usage: cli.mjs verify <folder> | build <config.json> <out> | digest <manifest.json> | sample <ids.json> <randomness> <size>');
+  console.error('usage: cli.mjs verify <folder> | build <config.json> <out> | digest <manifest.json> | sample <ids.json> <randomness> <size> | drand <beacon.json> <chain.json> | deposit <folder> <api-base> [repository-url]');
   return 2;
 }
 
