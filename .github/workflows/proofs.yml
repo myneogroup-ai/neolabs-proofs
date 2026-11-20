@@ -1,5 +1,6 @@
 # NEOLABS evidence packs: verify, sign, time-stamp, attest. Runs in the PUBLIC proof repository on standard
-# GitHub-hosted runners (free for a public repository). No inference key, no model call, no private file.
+# GitHub-hosted runners (free for a public repository). No inference key, no model call, no private file. The only
+# secrets are the deposit tokens of Zenodo and of its sandbox, used by manual runs only (ADR-0095).
 # Each external proof is recorded in packs/<test>/publication-index.json with its real state; a provider is never
 # published twice for one manifest (cli.mjs plan), so a run interrupted by a provider failure can simply run again.
 name: proofs
@@ -12,6 +13,18 @@ on:
     inputs:
       archive:
         description: 'Ask Software Heritage to archive this repository (a permanent public record): type yes'
+        required: false
+        default: 'no'
+      pack:
+        description: 'Folder under packs/ that the two inputs below act on'
+        required: false
+        default: 'test-2'
+      rehearse:
+        description: 'Rehearsal, nothing permanent and nothing committed: drand self-test and a deposit on the Zenodo SANDBOX: type yes'
+        required: false
+        default: 'no'
+      doi:
+        description: 'Deposit the pack on Zenodo for a PERMANENT public record and DOI (Founder go only): type PERMANENT'
         required: false
         default: 'no'
   schedule:
@@ -105,6 +118,60 @@ jobs:
               fi
             fi
           done
+      - name: The public draw (drand), for a pack whose manifest fixed a round
+        # The manifest names a FUTURE round before the campaign is sealed. The workflow notes that it saw the manifest
+        # before the round, then, once the League of Entropy has published the round, verifies its signature (BLS12-381,
+        # a pinned @noble/curves) and records the sample it draws. A round seen only after its time is never "verified".
+        run: |
+          set -uo pipefail
+          now() { date -u +%Y-%m-%dT%H:%M:%SZ; }
+          provider='drand (League of Entropy)'
+          for pack in packs/*/; do
+            pack="${pack%/}"
+            round="$(jq -r '.campaign.public_sample.round // empty' "$pack/manifest.json")"
+            size="$(jq -r '.campaign.public_sample.size // empty' "$pack/manifest.json")"
+            chain="$(jq -r '.campaign.public_sample.chain_hash // empty' "$pack/manifest.json")"
+            if [ -z "$round" ] || [ -z "$size" ] || ! printf '%s' "$chain" | grep -Eq '^[0-9a-f]{64}$'; then continue; fi
+            if [ "$(node verify/cli.mjs plan "$pack" "$provider")" = skip ]; then continue; fi
+            mkdir -p "$pack/proofs"
+            seen="$(jq -r --arg p "$provider" '.proofs[]? | select(.provider == $p) | .observed_before_round_at // empty' "$pack/publication-index.json" 2>/dev/null || true)"
+            if ! curl -fsS --retry 3 --max-time 60 "https://api.drand.sh/$chain/info" -o "$pack/proofs/drand-chain.json"; then
+              echo "::warning::drand did not answer for $pack; the draw is followed on the next run"; rm -f "$pack/proofs/drand-chain.json"; continue
+            fi
+            round_time="$(date -u -d "@$(jq -r --argjson r "$round" '.genesis_time + ($r - 1) * .period' "$pack/proofs/drand-chain.json")" +%Y-%m-%dT%H:%M:%SZ)"
+            if [ "$(date -u +%s)" -lt "$(date -u -d "$round_time" +%s)" ]; then
+              seen="${seen:-$(now)}"
+              node verify/cli.mjs proof "$pack" "$(jq -nc --arg p "$provider" --arg s "$seen" --arg t "$round_time" --argjson r "$round" '{provider:$p,group:"sample",status:"pending",external_id:("round " + ($r|tostring)),observed_before_round_at:$s,round_time:$t,detail:("Round " + ($r|tostring) + " is not published yet (round time " + $t + "). This workflow saw the manifest in the public repository at " + $s + ", before the round.")}')" "$(now)"
+              continue
+            fi
+            if ! curl -fsS --retry 3 --max-time 60 "https://api.drand.sh/$chain/public/$round" -o "$pack/proofs/drand-round.json"; then
+              echo "::warning::round $round could not be fetched for $pack; followed on the next run"; rm -f "$pack/proofs/drand-round.json"; continue
+            fi
+            npm install --silent --no-save --ignore-scripts --prefix /tmp/bls @noble/curves@1.9.7 >/dev/null
+            if NEOLABS_BLS_MODULE=/tmp/bls/node_modules/@noble/curves/bls12-381.js node verify/cli.mjs drand "$pack/proofs/drand-round.json" "$pack/proofs/drand-chain.json"; then
+              jq -c '.results.tasks' "$pack/manifest.json" > /tmp/ids.json
+              sample="$(node verify/cli.mjs sample /tmp/ids.json "$(jq -r .randomness "$pack/proofs/drand-round.json")" "$size")"
+              if [ -n "$seen" ]; then status=verified; note="This workflow saw the manifest at $seen, before round time $round_time."; else status=insufficient; note="This workflow did not see the manifest before round time $round_time: the conditions of the draw are not shown as met."; fi
+              node verify/cli.mjs proof "$pack" "$(jq -nc --arg p "$provider" --arg st "$status" --arg n "$note" --arg s "$seen" --arg t "$round_time" --argjson sample "$sample" '{provider:$p,group:"sample",kind:"drand-beacon",status:$st,file:"proofs/drand-round.json",chain_file:"proofs/drand-chain.json",sample:$sample,round_time:$t,detail:$n,verify_command:"npm install @noble/curves@1.9.7 && node verify/cli.mjs drand proofs/drand-round.json proofs/drand-chain.json"} + (if $s == "" then {} else {observed_before_round_at:$s} end)')" "$(now)"
+            else
+              node verify/cli.mjs proof "$pack" "$(jq -nc --arg p "$provider" '{provider:$p,group:"sample",kind:"drand-beacon",status:"discrepancy",file:"proofs/drand-round.json",chain_file:"proofs/drand-chain.json",detail:"The signature of the round did not verify under the public key of the chain on the last run."}')" "$(now)"
+            fi
+          done
+      - name: Permanent record and DOI on Zenodo (Founder go only)
+        # A PERMANENT public record: only on a manual run that types PERMANENT, for the pack it names, once per manifest.
+        if: github.event_name == 'workflow_dispatch' && inputs.doi == 'PERMANENT'
+        env:
+          DEPOSIT_TOKEN: ${{ secrets.ZENODO_TOKEN }}
+          PACK: ${{ inputs.pack }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$PACK" | grep -Eq '^[a-z0-9-]+$' && [ -f "packs/$PACK/manifest.json" ] || { echo "packs/$PACK is not an evidence pack"; exit 1; }
+          pack="packs/$PACK"; provider='Zenodo (DataCite DOI)'
+          if [ "$(node verify/cli.mjs plan "$pack" "$provider")" = skip ]; then echo "This manifest already has its DOI."; exit 0; fi
+          node verify/cli.mjs verify "$pack"
+          mkdir -p "$pack/proofs"
+          node verify/cli.mjs deposit "$pack" https://zenodo.org/api "https://github.com/${{ github.repository }}" > "$pack/proofs/zenodo-record.json"
+          node verify/cli.mjs proof "$pack" "$(jq -c '{provider:"Zenodo (DataCite DOI)",group:"provenance",status:"verified",file:"proofs/zenodo-record.json",must_name_manifest_digest:true,doi:.doi,url:("https://doi.org/" + .doi),detail:("Permanent public record of this pack, DOI " + .doi + ". The record names the fingerprint of this manifest; every uploaded file matched the checksum the repository computed.")}' "$pack/proofs/zenodo-record.json")"
       - name: Attest the provenance of the published scorer
         uses: actions/attest-build-provenance@v2
         with:
@@ -122,3 +189,37 @@ jobs:
           git config user.email 'neolabs-proofs@users.noreply.github.com'
           git add packs
           git diff --cached --quiet || { git commit -m 'Record external proofs in the publication index [skip ci]'; git push; }
+
+  rehearse:
+    # A rehearsal of the two steps that cannot be tried on a real pack without leaving a permanent trace. It commits
+    # nothing and records nothing in a publication index. The sandbox of Zenodo holds test records only.
+    needs: verify
+    if: github.event_name == 'workflow_dispatch' && inputs.rehearse == 'yes'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: 'drand, live - the latest round of the quicknet chain verifies with the code of this repository'
+        run: |
+          set -euo pipefail
+          chain=52db9ba70e0cc0f6eaf7803dd07447a1f5477735fd3f661792ba94600c84e971
+          npm install --silent --no-save --ignore-scripts --prefix /tmp/bls @noble/curves@1.9.7 >/dev/null
+          export NEOLABS_BLS_MODULE=/tmp/bls/node_modules/@noble/curves/bls12-381.js
+          node --test verify/test/*.test.mjs
+          curl -fsS --retry 3 --max-time 60 "https://api.drand.sh/$chain/info" -o /tmp/chain.json
+          curl -fsS --retry 3 --max-time 60 "https://api.drand.sh/$chain/public/latest" -o /tmp/round.json
+          node verify/cli.mjs drand /tmp/round.json /tmp/chain.json | tee -a "$GITHUB_STEP_SUMMARY"
+          # The same round with one bit of its randomness changed must be refused.
+          jq '.randomness = ("0" * 64)' /tmp/round.json > /tmp/forged.json
+          if node verify/cli.mjs drand /tmp/forged.json /tmp/chain.json; then echo 'a forged round was accepted'; exit 1; fi
+      - name: 'Zenodo SANDBOX - deposit the pack, check every checksum, read the test DOI'
+        env:
+          DEPOSIT_TOKEN: ${{ secrets.ZENODO_SANDBOX_TOKEN }}
+          PACK: ${{ inputs.pack }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$PACK" | grep -Eq '^[a-z0-9-]+$' && [ -f "packs/$PACK/manifest.json" ] || { echo "packs/$PACK is not an evidence pack"; exit 1; }
+          node verify/cli.mjs deposit "packs/$PACK" https://sandbox.zenodo.org/api "https://github.com/${{ github.repository }}" > /tmp/record.json
+          [ "$(jq -r .manifest_sha256 /tmp/record.json)" = "$(node verify/cli.mjs digest "packs/$PACK/manifest.json")" ]
+          { echo '### Zenodo sandbox rehearsal (a test record, not a permanent identifier)'; jq -r '"- test DOI: \(.doi)\n- record: \(.url)\n- manifest: \(.manifest_sha256)\n- files: \(.files | length), every checksum matched"' /tmp/record.json; } | tee -a "$GITHUB_STEP_SUMMARY"
