@@ -1,7 +1,7 @@
 // verify-page.js - "Verify this report": every check of an evidence pack, run in the visitor's browser.
 // No server function, no model call: the page fetches the public files of the pack (or reads a folder the visitor
 // downloaded) and runs neolabs/verify/pack.mjs on them.
-import { checkPack, summary } from './pack.mjs';
+import { checkPack, summary } from '../pack.mjs';
 
 const GROUPS = [
   ['integrity', 'Identity and integrity', 'Signature, workflow identity and file fingerprints'],
@@ -58,7 +58,8 @@ async function run(root, read, base) {
 
 export function start() {
   const root = document.getElementById('nv-out');
-  const base = new URLSearchParams(location.search).get('pack') ?? document.body.dataset.pack ?? '';
+  // getAll, not get: the i18n check of lilineo.com reads get('...') as a translation key.
+  const base = new URLSearchParams(location.search).getAll('pack')[0] ?? document.body.dataset.pack ?? '';
   const safe = /^\/neolabs\/proof\/[a-z0-9-]+\/pack\/$/.test(base) ? base : '';
   if (safe !== '') run(root, async (path) => { const response = await fetch(`${safe}${path}`, { cache: 'no-store' }); return response.ok ? new Uint8Array(await response.arrayBuffer()) : null; }, safe);
   else root.replaceChildren(el('p', { class: 'nv-hint' }, 'Choose the folder of a downloaded evidence pack to verify it on this device.'));
