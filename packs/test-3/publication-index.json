@@ -1,7 +1,7 @@
 {
   "schema": "neolabs.publication-index/1",
   "manifest_sha256": "53c569cc9228a28888b2bf78a8475f50710d7db38ac20384dac0aa02dd353fc9",
-  "updated_at": "2026-11-22T15:07:52Z",
+  "updated_at": "2026-11-22T15:17:54.516Z",
   "proofs": [
     {
       "provider": "FreeTSA",
@@ -12,6 +12,15 @@
       "detail": "RFC 3161 time-stamp of the manifest by FreeTSA (a free, community authority; complementary to the DigiCert time-stamp of the ledger).",
       "verify_command": "openssl ts -verify -data proofs/manifest.jcs -in proofs/freetsa.tsr -CAfile proofs/freetsa-cacert.pem -untrusted proofs/freetsa-tsa.crt",
       "checked_at": "2026-11-22T09:32:16Z"
+    },
+    {
+      "provider": "Hugging Face (dataset)",
+      "group": "provenance",
+      "status": "verified",
+      "file": "proofs/huggingface-record.json",
+      "must_name_manifest_digest": true,
+      "url": "https://huggingface.co/datasets/NEOTECHLABS/neo-ai-evaluations-test-3",
+      "detail": "The per-task public results as an open dataset: https://huggingface.co/datasets/NEOTECHLABS/neo-ai-evaluations-test-3. Every file was read back and has the SHA-256 of the pack."
     },
     {
       "provider": "OpenTimestamps (Bitcoin)",
