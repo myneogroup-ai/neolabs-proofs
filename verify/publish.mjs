@@ -10,6 +10,8 @@ import { sha256 } from './jcs.mjs';
 import { depositPlan, HOLDER } from './deposit.mjs';
 
 const base64 = (bytes) => Buffer.from(bytes).toString('base64');
+/** The files of a pack that go to a dataset repository: its data and manifest, as text. */
+export const TEXT_FILE = /\.(json|jcs|md|pem|csv)$/;
 const text = (value) => new TextEncoder().encode(value);
 
 function caller(fetcher, token) {
@@ -29,6 +31,7 @@ export function datasetCard(plan, title, repository) {
     `Per-task public results of this official test (status, time, cost per answer, reviewers' scores) and the manifest that fingerprints them.`,
     `SHA-256 of the RFC 8785 form of the manifest: \`${plan.manifest_sha256}\`.`, '',
     `Every published figure can be recomputed from \`results.json\` with the published scorer${repository ? ` (${repository})` : ''}.`,
+    'The report (PDF) and the time-stamp tokens of the pack are binary files: they are in the public proof repository, not here.',
     'Quality scores are the judgement of AI reviewer models recorded at the time. No external party has reproduced or audited this test.', '',
     `Holder: ${HOLDER}. Licence of the data: CC BY 4.0.`, '',
   ].join('\n');
@@ -51,7 +54,9 @@ export async function publishToHuggingFace({ token, read, name, title = 'NEOLABS
   await call('create the dataset repository', `${api}/api/repos/create`, { method: 'POST', headers: json, body: JSON.stringify({ type: 'dataset', name, private: rehearsal }) });
   let record = null;
   try {
-    const files = [...plan.files, { name: 'README.md', bytes: text(datasetCard(plan, title, repository)) }];
+    // A dataset repository takes text files in a plain commit; a binary file (the PDF of the report, a time-stamp
+    // token) would need its large-file protocol and is not data: those stay in the proof repository and the DOI.
+    const files = [...plan.files.filter((file) => TEXT_FILE.test(file.name)), { name: 'README.md', bytes: text(datasetCard(plan, title, repository)) }];
     const lines = [{ key: 'header', value: { summary: `Evidence pack, manifest ${plan.manifest_sha256.slice(0, 12)}`, description: '' } }, ...files.map((file) => ({ key: 'file', value: { path: file.name, encoding: 'base64', content: base64(file.bytes) } }))];
     const commit = await call('commit the pack', `${api}/api/datasets/${repo}/commit/main`, { method: 'POST', headers: { 'Content-Type': 'application/x-ndjson' }, body: lines.map((line) => JSON.stringify(line)).join('\n') });
     const checked = [];

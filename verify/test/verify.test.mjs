@@ -332,8 +332,9 @@ test('Hugging Face: a rehearsal creates a private repository, reads every file b
   assert.equal(record.repository, 'neo-evaluations/rehearsal-pack');
   assert.equal(record.manifest_sha256, p.digest);
   assert.equal(record.deleted, true);
-  assert.deepEqual(h1.state(), { exists: false, isPrivate: true, files: ['README.md', 'ledger-7.tsr', 'ledger-entry-7.json', 'manifest.jcs', 'manifest.json', 'report.pdf', 'results.json'] });
-  assert.equal(record.files.length, 7);
+  // Text files only: the PDF of the report and the time-stamp token are not sent to a dataset repository.
+  assert.deepEqual(h1.state(), { exists: false, isPrivate: true, files: ['README.md', 'ledger-entry-7.json', 'manifest.jcs', 'manifest.json', 'results.json'] });
+  assert.equal(record.files.length, 5);
   assert.ok(h1.calls.every((call) => call.auth === 'Bearer fixture-token'));
   // A public deposit stays, and its card says what the files are and are not.
   const h2 = hub();
