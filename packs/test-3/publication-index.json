@@ -1,6 +1,45 @@
 {
   "schema": "neolabs.publication-index/1",
   "manifest_sha256": "53c569cc9228a28888b2bf78a8475f50710d7db38ac20384dac0aa02dd353fc9",
-  "updated_at": "2026-11-22T09:29:07.000Z",
-  "proofs": []
+  "updated_at": "2026-11-22T09:32:21Z",
+  "proofs": [
+    {
+      "provider": "FreeTSA",
+      "group": "date",
+      "status": "verified",
+      "file": "proofs/freetsa.tsr",
+      "must_contain_manifest_digest": true,
+      "detail": "RFC 3161 time-stamp of the manifest by FreeTSA (a free, community authority; complementary to the DigiCert time-stamp of the ledger).",
+      "verify_command": "openssl ts -verify -data proofs/manifest.jcs -in proofs/freetsa.tsr -CAfile proofs/freetsa-cacert.pem -untrusted proofs/freetsa-tsa.crt",
+      "checked_at": "2026-11-22T09:32:16Z"
+    },
+    {
+      "provider": "OpenTimestamps (Bitcoin)",
+      "group": "date",
+      "status": "pending",
+      "file": "proofs/manifest.jcs.ots",
+      "must_contain_manifest_digest": true,
+      "detail": "Submitted to the public calendars; awaiting confirmation in a Bitcoin block.",
+      "checked_at": "2026-11-22T09:32:21Z"
+    },
+    {
+      "provider": "Sigstore (Fulcio, Rekor)",
+      "group": "integrity",
+      "status": "verified",
+      "kind": "sigstore-bundle",
+      "file": "proofs/manifest.sigstore.json",
+      "detail": "Signed by the workflow https://github.com/myneogroup-ai/neolabs-proofs/.github/workflows/proofs.yml@refs/heads/main; inclusion in Rekor verified.",
+      "verify_command": "cosign verify-blob --bundle proofs/manifest.sigstore.json --certificate-identity https://github.com/myneogroup-ai/neolabs-proofs/.github/workflows/proofs.yml@refs/heads/main --certificate-oidc-issuer https://token.actions.githubusercontent.com proofs/manifest.jcs",
+      "checked_at": "2026-11-22T09:32:16Z"
+    },
+    {
+      "provider": "drand (League of Entropy)",
+      "group": "sample",
+      "status": "pending",
+      "external_id": "round 34185412",
+      "observed_before_round_at": "2026-11-22T09:32:21Z",
+      "round_time": "2026-11-22T15:00:00Z",
+      "detail": "Round 34185412 is not published yet (round time 2026-11-22T15:00:00Z). This workflow saw the manifest in the public repository at 2026-11-22T09:32:21Z, before the round."
+    }
+  ]
 }
