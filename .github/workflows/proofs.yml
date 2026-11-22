@@ -7,7 +7,7 @@ name: proofs
 on:
   push:
     branches: [main]
-    paths: ['packs/**', 'verify/**', '.github/workflows/proofs.yml']
+    paths: ['packs/**', 'protocols/**', 'verify/**', '.github/workflows/proofs.yml']
   pull_request:
   workflow_dispatch:
     inputs:
@@ -218,13 +218,51 @@ jobs:
         if: github.event_name == 'workflow_dispatch' && inputs.archive == 'yes'
         continue-on-error: true
         run: curl -fsS --max-time 60 -X POST "https://archive.softwareheritage.org/api/1/origin/save/git/url/https://github.com/${{ github.repository }}/" | head -c 600
+      - name: "Protocols: sign and time-stamp each one once (before its test runs)"
+        env:
+          IDENTITY: https://github.com/${{ github.repository }}/.github/workflows/proofs.yml@refs/heads/main
+        run: |
+          set -uo pipefail
+          mkdir -p protocols/proofs
+          for protocol in protocols/*.md; do
+            [ -f "$protocol" ] || continue
+            name="$(basename "$protocol" .md)"; out="protocols/proofs/$name"
+            echo "== $protocol $(sha256sum "$protocol" | cut -d' ' -f1)"
+            # A proof that exists is never replaced: it holds the date of the first publication.
+            if [ ! -f "$out.sigstore.json" ]; then
+              cosign sign-blob --yes --bundle "$out.sigstore.json" "$protocol" >/dev/null \
+                && cosign verify-blob --bundle "$out.sigstore.json" --certificate-identity "$IDENTITY" --certificate-oidc-issuer https://token.actions.githubusercontent.com "$protocol" \
+                || { rm -f "$out.sigstore.json"; echo "Sigstore: not produced for $protocol"; }
+            fi
+            if [ ! -f "$out.freetsa.tsr" ]; then
+              openssl ts -query -data "$protocol" -sha256 -cert -no_nonce -out /tmp/protocol.tsq \
+                && curl -fsS --retry 3 --max-time 60 -H 'Content-Type: application/timestamp-query' --data-binary @/tmp/protocol.tsq https://freetsa.org/tsr -o "$out.freetsa.tsr" \
+                && curl -fsS --retry 3 --max-time 60 https://freetsa.org/files/cacert.pem -o protocols/proofs/freetsa-cacert.pem \
+                && curl -fsS --retry 3 --max-time 60 https://freetsa.org/files/tsa.crt -o protocols/proofs/freetsa-tsa.crt \
+                && openssl ts -verify -data "$protocol" -in "$out.freetsa.tsr" -CAfile protocols/proofs/freetsa-cacert.pem -untrusted protocols/proofs/freetsa-tsa.crt \
+                || { rm -f "$out.freetsa.tsr"; echo "FreeTSA: not produced for $protocol"; }
+            fi
+            if [ ! -f "$out.digicert.tsr" ]; then
+              openssl ts -query -data "$protocol" -sha256 -cert -no_nonce -out /tmp/protocol.tsq \
+                && curl -fsS --retry 3 --max-time 60 -H 'Content-Type: application/timestamp-query' --data-binary @/tmp/protocol.tsq http://timestamp.digicert.com -o "$out.digicert.tsr" \
+                && openssl ts -reply -in "$out.digicert.tsr" -text | grep -q 'Status: Granted' \
+                || { rm -f "$out.digicert.tsr"; echo "DigiCert: not produced for $protocol"; }
+            fi
+            if [ ! -f "$out.md.ots" ]; then
+              cp "$protocol" "/tmp/$name.md" && ots stamp "/tmp/$name.md" && cp "/tmp/$name.md.ots" "$out.md.ots" || echo "OpenTimestamps: not produced for $protocol"
+            else
+              cp "$protocol" "/tmp/$name.md"; cp "$out.md.ots" "/tmp/$name.md.ots"; ots upgrade "/tmp/$name.md.ots" && cp "/tmp/$name.md.ots" "$out.md.ots" || true
+            fi
+            openssl ts -reply -in "$out.freetsa.tsr" -text 2>/dev/null | grep 'Time stamp:' || true
+            openssl ts -reply -in "$out.digicert.tsr" -text 2>/dev/null | grep 'Time stamp:' || true
+          done
       - name: Verify again, then commit the proofs
         run: |
           set -euo pipefail
           for pack in packs/*/; do node verify/cli.mjs verify "$pack" || { echo 'Structure of the Sigstore bundle, for diagnosis:'; jq -c '[paths(scalars) | map(tostring) | join(".")]' "$pack/proofs/manifest.sigstore.json" || true; exit 1; }; done
           git config user.name 'neolabs-proofs[bot]'
           git config user.email 'neolabs-proofs@users.noreply.github.com'
-          git add packs
+          git add packs protocols
           git diff --cached --quiet || { git commit -m 'Record external proofs in the publication index [skip ci]'; git push; }
 
   rehearse:
