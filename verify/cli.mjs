@@ -9,6 +9,8 @@
 //   node cli.mjs sample <ids.json> <randomness-hex> <size>   the public sample of a drand round
 //   node cli.mjs drand <beacon.json> <chain.json>   checks a drand round (needs `npm install @noble/curves` for the signature)
 //   node cli.mjs deposit <folder> <api-base> [repo-url]   deposits the pack in Zenodo or its sandbox (token: DEPOSIT_TOKEN)
+//   node cli.mjs huggingface <folder> <name> rehearsal|public   the pack as a Hugging Face dataset (token: DEPOSIT_TOKEN)
+//   node cli.mjs osf <protocol-file> <title> rehearsal|public   the protocol of a test in an OSF project (token: DEPOSIT_TOKEN)
 import { mkdirSync, readFileSync, writeFileSync, existsSync, copyFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { canonicalize } from './jcs.mjs';
@@ -84,8 +86,25 @@ async function main(argv) {
     console.log(JSON.stringify(record, null, 2));
     return 0;
   }
+  if (command === 'huggingface') {
+    // node cli.mjs huggingface <folder> <dataset-name> rehearsal|public [repository-url]: token from DEPOSIT_TOKEN.
+    const { publishToHuggingFace } = await import('./publish.mjs');
+    if (args[2] !== 'rehearsal' && args[2] !== 'public') { console.error('the third argument is rehearsal or public'); return 2; }
+    const manifest = JSON.parse(readFileSync(join(args[0], 'manifest.json'), 'utf8'));
+    const record = await publishToHuggingFace({ token: process.env.DEPOSIT_TOKEN ?? '', name: args[1], title: String(manifest.test?.title ?? 'NEOLABS official test'), repository: args[3] ?? null, rehearsal: args[2] === 'rehearsal', read: async (path) => (existsSync(join(args[0], path)) ? new Uint8Array(readFileSync(join(args[0], path))) : null) });
+    console.log(JSON.stringify(record, null, 2));
+    return 0;
+  }
+  if (command === 'osf') {
+    // node cli.mjs osf <protocol-file> <title> rehearsal|public: token from DEPOSIT_TOKEN.
+    const { depositProtocolOnOsf } = await import('./publish.mjs');
+    if (args[2] !== 'rehearsal' && args[2] !== 'public') { console.error('the third argument is rehearsal or public'); return 2; }
+    const record = await depositProtocolOnOsf({ token: process.env.DEPOSIT_TOKEN ?? '', protocol: new Uint8Array(readFileSync(args[0])), filename: args[0].split('/').pop(), title: args[1], rehearsal: args[2] === 'rehearsal' });
+    console.log(JSON.stringify(record, null, 2));
+    return 0;
+  }
   if (command === 'sample') { console.log(JSON.stringify(await drawSample(JSON.parse(readFileSync(args[0], 'utf8')), args[1], Number(args[2])))); return 0; }
-  console.error('usage: cli.mjs verify <folder> | build <config.json> <out> | digest <manifest.json> | sample <ids.json> <randomness> <size> | drand <beacon.json> <chain.json> | deposit <folder> <api-base> [repository-url]');
+  console.error('usage: cli.mjs verify <folder> | build <config.json> <out> | digest <manifest.json> | sample <ids.json> <randomness> <size> | drand <beacon.json> <chain.json> | deposit <folder> <api-base> [repository-url] | huggingface <folder> <name> rehearsal|public [repository-url] | osf <protocol-file> <title> rehearsal|public');
   return 2;
 }
 

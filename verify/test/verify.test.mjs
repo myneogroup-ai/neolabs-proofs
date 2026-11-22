@@ -305,3 +305,90 @@ test('a deposit stops before any upload on a pack that differs from its manifest
     await assert.rejects(deposit({ ...base, fetcher: repository({ failAt: step }).fetcher }), (error) => /HTTP 500/.test(error.message) && !error.message.includes('fixture-token'));
   }
 });
+
+// ---- Hugging Face and OSF (ADR-0101): local stand-ins, no network ---------------------------------------------------
+function hub({ corrupt = null, failAt = null } = {}) {
+  const calls = []; const held = new Map(); let exists = false; let isPrivate = null;
+  const answer = (status, body, bytes = null) => ({ ok: status < 300, status, json: async () => body, arrayBuffer: async () => bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) });
+  const fetcher = async (url, init = {}) => {
+    const method = init.method ?? 'GET';
+    calls.push({ url, method, auth: init.headers?.Authorization });
+    const step = url.endsWith('/api/whoami-v2') ? 'who' : url.endsWith('/api/repos/create') ? 'create' : url.includes('/commit/main') ? 'commit' : url.includes('/resolve/main/') ? 'read' : 'delete';
+    if (failAt === step) return answer(500, { error: `echo ${String(init.headers?.Authorization)}` });
+    if (step === 'who') return answer(200, { name: 'neo-evaluations' });
+    if (step === 'create') { exists = true; isPrivate = JSON.parse(init.body).private; return answer(200, { url: 'x' }); }
+    if (step === 'commit') { for (const line of init.body.split('\n').map((l) => JSON.parse(l))) if (line.key === 'file') held.set(line.value.path, Uint8Array.from(Buffer.from(line.value.content, 'base64'))); return answer(200, { commitOid: 'abc123' }); }
+    if (step === 'read') { const name = decodeURIComponent(url.split('/resolve/main/')[1]); return answer(200, null, name === corrupt ? enc.encode('other') : held.get(name)); }
+    exists = false; return answer(200, {});
+  };
+  return { calls, fetcher, state: () => ({ exists, isPrivate, files: [...held.keys()].sort() }) };
+}
+
+test('Hugging Face: a rehearsal creates a private repository, reads every file back, compares it and deletes the repository', async () => {
+  const { publishToHuggingFace, datasetCard } = await import('../publish.mjs');
+  const p = await pack();
+  const h1 = hub();
+  const record = await publishToHuggingFace({ token: 'fixture-token', read: reader(p.files), name: 'rehearsal-pack', title: 'Official Test No. 9', fetcher: h1.fetcher, api: 'https://hub.example' });
+  assert.equal(record.repository, 'neo-evaluations/rehearsal-pack');
+  assert.equal(record.manifest_sha256, p.digest);
+  assert.equal(record.deleted, true);
+  assert.deepEqual(h1.state(), { exists: false, isPrivate: true, files: ['README.md', 'ledger-7.tsr', 'ledger-entry-7.json', 'manifest.jcs', 'manifest.json', 'report.pdf', 'results.json'] });
+  assert.equal(record.files.length, 7);
+  assert.ok(h1.calls.every((call) => call.auth === 'Bearer fixture-token'));
+  // A public deposit stays, and its card says what the files are and are not.
+  const h2 = hub();
+  const kept = await publishToHuggingFace({ token: 'fixture-token', read: reader(p.files), name: 'official-test-9', rehearsal: false, fetcher: h2.fetcher, api: 'https://hub.example' });
+  assert.deepEqual([kept.deleted, h2.state().exists, h2.state().isPrivate], [false, true, false]);
+  const card = datasetCard({ manifest_sha256: p.digest }, 'Official Test No. 9', null);
+  assert.ok(card.includes(p.digest) && card.includes('license: cc-by-4.0'));
+  assert.doesNotMatch(card, /certified|independently validated|audited by|anthropic|openai|spent/i);
+});
+
+test('Hugging Face: a content that differs or a failure leaves no rehearsal repository behind and never echoes the token', async () => {
+  const { publishToHuggingFace } = await import('../publish.mjs');
+  const p = await pack();
+  const base = { token: 'fixture-token', read: reader(p.files), name: 'rehearsal-pack', api: 'https://hub.example' };
+  const wrong = hub({ corrupt: 'results.json' });
+  await assert.rejects(publishToHuggingFace({ ...base, fetcher: wrong.fetcher }), /results\.json back: the repository holds another content/);
+  assert.equal(wrong.state().exists, false, 'deleted even though the check failed');
+  const broken = hub({ failAt: 'commit' });
+  await assert.rejects(publishToHuggingFace({ ...base, fetcher: broken.fetcher }), (error) => /HTTP 500/.test(error.message) && !error.message.includes('fixture-token'));
+  assert.equal(broken.state().exists, false);
+  await assert.rejects(publishToHuggingFace({ ...base, token: '', fetcher: hub().fetcher }), /no access token/);
+  await assert.rejects(publishToHuggingFace({ ...base, name: 'Bad Name', fetcher: hub().fetcher }), /simple slug/);
+  const altered = new Map(p.files); altered.set('report.pdf', enc.encode('%PDF altered'));
+  const untouched = hub();
+  await assert.rejects(publishToHuggingFace({ ...base, read: reader(altered), fetcher: untouched.fetcher }), /report\.pdf does not match/);
+  assert.equal(untouched.calls.length, 0);
+});
+
+test('OSF: the protocol goes to a project, the SHA-256 OSF computed is compared, a rehearsal project is deleted', async () => {
+  const { depositProtocolOnOsf } = await import('../publish.mjs');
+  const protocol = enc.encode('# Protocol of Official Test No. 9\n\nThreshold fixed before the run.\n');
+  const digest = await sha256(protocol);
+  const osf = (hash = digest) => {
+    const calls = []; let exists = false; let isPublic = null;
+    const fetcher = async (url, init = {}) => {
+      const method = init.method ?? 'GET';
+      calls.push({ url, method, auth: init.headers?.Authorization });
+      const ok = (status, body) => ({ ok: status < 300, status, json: async () => body });
+      if (method === 'POST') { exists = true; const sent = JSON.parse(init.body).data.attributes; isPublic = sent.public; return ok(201, { data: { id: 'ab3xz', attributes: sent } }); }
+      if (method === 'PUT') return ok(201, { data: { attributes: { extra: { hashes: { sha256: hash } } } } });
+      exists = false; return ok(204, null);
+    };
+    return { calls, fetcher, state: () => ({ exists, isPublic }) };
+  };
+  const o1 = osf();
+  const record = await depositProtocolOnOsf({ token: 'fixture-token', protocol, title: 'Official Test No. 9 - protocol', fetcher: o1.fetcher });
+  assert.deepEqual([record.node, record.sha256, record.deleted, record.url], ['ab3xz', digest, true, 'https://osf.io/ab3xz/']);
+  assert.deepEqual(o1.state(), { exists: false, isPublic: false });
+  assert.match(o1.calls[1].url, /\/resources\/ab3xz\/providers\/osfstorage\/\?kind=file&name=protocol\.md$/);
+  const o2 = osf();
+  const kept = await depositProtocolOnOsf({ token: 'fixture-token', protocol, title: 'Official Test No. 9 - protocol', rehearsal: false, fetcher: o2.fetcher });
+  assert.deepEqual([kept.deleted, o2.state().exists, o2.state().isPublic], [false, true, true]);
+  const o3 = osf('f'.repeat(64));
+  await assert.rejects(depositProtocolOnOsf({ token: 'fixture-token', protocol, title: 't', fetcher: o3.fetcher }), /OSF holds another content/);
+  assert.equal(o3.state().exists, false, 'the rehearsal project is deleted even though the check failed');
+  await assert.rejects(depositProtocolOnOsf({ token: '', protocol, title: 't', fetcher: osf().fetcher }), /no access token/);
+  await assert.rejects(depositProtocolOnOsf({ token: 'x', protocol: new Uint8Array(), title: 't', fetcher: osf().fetcher }), /empty/);
+});
