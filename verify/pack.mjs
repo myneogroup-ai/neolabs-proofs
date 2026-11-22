@@ -233,8 +233,19 @@ export async function checkPack(read) {
         }
       }
       add(`ext:${proof.provider}`, proof.group ?? 'date', status, proof.provider, [detail, proof.url ? `Link: ${proof.url}` : '', proof.checked_at ? `Last check: ${proof.checked_at}` : ''].filter(Boolean).join(' '));
+      if (proof.kind === 'drand-beacon') checks[checks.length - 1].drand = true;
     }
   }
+  // The manifest is sealed before the round of its public draw exists, so it can only say "pending". Once the
+  // publication index holds the round, and the check of that round is verified, the draw is done: the check of the
+  // sample says so. A draw in discrepancy never becomes verified here.
+  const draw = checks.find((check) => check.drand === true);
+  const pendingSample = checks.find((check) => check.id === 'sample' && check.status === 'pending');
+  if (draw !== undefined && draw.status === 'verified' && pendingSample !== undefined) {
+    pendingSample.status = 'verified';
+    pendingSample.detail = `The round the manifest fixed before the run has been published and checked: the sample is drawn. ${draw.detail}`;
+  }
+  for (const check of checks) delete check.drand;
   return { manifest_sha256: digest, manifest, checks };
 }
 
