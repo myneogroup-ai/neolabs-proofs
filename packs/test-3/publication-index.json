@@ -1,7 +1,7 @@
 {
   "schema": "neolabs.publication-index/1",
   "manifest_sha256": "53c569cc9228a28888b2bf78a8475f50710d7db38ac20384dac0aa02dd353fc9",
-  "updated_at": "2026-11-22T10:49:44Z",
+  "updated_at": "2026-11-22T15:07:52Z",
   "proofs": [
     {
       "provider": "FreeTSA",
@@ -36,11 +36,26 @@
     {
       "provider": "drand (League of Entropy)",
       "group": "sample",
-      "status": "pending",
-      "external_id": "round 34185412",
-      "observed_before_round_at": "2026-11-22T09:32:21Z",
+      "kind": "drand-beacon",
+      "status": "verified",
+      "file": "proofs/drand-round.json",
+      "chain_file": "proofs/drand-chain.json",
+      "sample": [
+        "d89-en",
+        "r131-en",
+        "d80-fr",
+        "r121-en",
+        "d109-en",
+        "r142-fr",
+        "c59-en",
+        "d95-en",
+        "r139-en",
+        "d104-fr"
+      ],
       "round_time": "2026-11-22T15:00:00Z",
-      "detail": "Round 34185412 is not published yet (round time 2026-11-22T15:00:00Z). This workflow saw the manifest in the public repository at 2026-11-22T09:32:21Z, before the round."
+      "detail": "This workflow saw the manifest at 2026-11-22T09:32:21Z, before round time 2026-11-22T15:00:00Z.",
+      "verify_command": "npm install @noble/curves@1.9.7 && node verify/cli.mjs drand proofs/drand-round.json proofs/drand-chain.json",
+      "observed_before_round_at": "2026-11-22T09:32:21Z"
     }
   ]
 }
