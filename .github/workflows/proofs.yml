@@ -27,6 +27,14 @@ on:
         description: 'Deposit the pack on Zenodo for a PERMANENT public record and DOI (Founder go only): type PERMANENT'
         required: false
         default: 'no'
+      dataset:
+        description: 'Publish the pack as a PUBLIC Hugging Face dataset (Founder go only): type PUBLIC'
+        required: false
+        default: 'no'
+      preregister:
+        description: 'Deposit protocols/<pack>.md in a PUBLIC OSF project, before the test runs (Founder go only): type PUBLIC'
+        required: false
+        default: 'no'
   schedule:
     - cron: '17 */6 * * *'   # follows the proofs that are still pending (OpenTimestamps confirmation)
 
@@ -172,6 +180,35 @@ jobs:
           mkdir -p "$pack/proofs"
           node verify/cli.mjs deposit "$pack" https://zenodo.org/api "https://github.com/${{ github.repository }}" > "$pack/proofs/zenodo-record.json"
           node verify/cli.mjs proof "$pack" "$(jq -c '{provider:"Zenodo (DataCite DOI)",group:"provenance",status:"verified",file:"proofs/zenodo-record.json",must_name_manifest_digest:true,doi:.doi,url:("https://doi.org/" + .doi),detail:("Permanent public record of this pack, DOI " + .doi + ". The record names the fingerprint of this manifest; every uploaded file matched the checksum the repository computed.")}' "$pack/proofs/zenodo-record.json")"
+      - name: Public dataset on Hugging Face (Founder go only)
+        if: github.event_name == 'workflow_dispatch' && inputs.dataset == 'PUBLIC'
+        env:
+          DEPOSIT_TOKEN: ${{ secrets.HF_TOKEN }}
+          PACK: ${{ inputs.pack }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$PACK" | grep -Eq '^[a-z0-9-]+$' && [ -f "packs/$PACK/manifest.json" ] || { echo "packs/$PACK is not an evidence pack"; exit 1; }
+          pack="packs/$PACK"; provider='Hugging Face (dataset)'
+          if [ "$(node verify/cli.mjs plan "$pack" "$provider")" = skip ]; then echo "This manifest is already published as a dataset."; exit 0; fi
+          node verify/cli.mjs verify "$pack"
+          mkdir -p "$pack/proofs"
+          node verify/cli.mjs huggingface "$pack" "neo-ai-evaluations-$PACK" public "https://github.com/${{ github.repository }}" > "$pack/proofs/huggingface-record.json"
+          node verify/cli.mjs proof "$pack" "$(jq -c '{provider:"Hugging Face (dataset)",group:"provenance",status:"verified",file:"proofs/huggingface-record.json",must_name_manifest_digest:true,url:.url,detail:("The per-task public results as an open dataset: " + .url + ". Every file was read back and has the SHA-256 of the pack.")}' "$pack/proofs/huggingface-record.json")"
+      - name: Protocol of a test in a public OSF project, before the test (Founder go only)
+        # The protocol is a file of this repository (protocols/<pack>.md), so it is also time-stamped by the steps
+        # above. The project is public; the frozen registration is made from it by a person in OSF.
+        if: github.event_name == 'workflow_dispatch' && inputs.preregister == 'PUBLIC'
+        env:
+          DEPOSIT_TOKEN: ${{ secrets.OSF_TOKEN }}
+          PACK: ${{ inputs.pack }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$PACK" | grep -Eq '^[a-z0-9-]+$' && [ -f "protocols/$PACK.md" ] || { echo "protocols/$PACK.md is missing"; exit 1; }
+          if [ -f "protocols/$PACK.osf.json" ]; then echo "This protocol is already deposited."; exit 0; fi
+          node verify/cli.mjs osf "protocols/$PACK.md" "NEO AI Evaluations - protocol of $PACK" public > "protocols/$PACK.osf.json"
+          [ "$(jq -r .sha256 "protocols/$PACK.osf.json")" = "$(sha256sum "protocols/$PACK.md" | cut -d' ' -f1)" ]
+          git add "protocols/$PACK.osf.json"
+          cat "protocols/$PACK.osf.json" | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Attest the provenance of the published scorer
         uses: actions/attest-build-provenance@v2
         with:
@@ -223,3 +260,21 @@ jobs:
           node verify/cli.mjs deposit "packs/$PACK" https://sandbox.zenodo.org/api "https://github.com/${{ github.repository }}" > /tmp/record.json
           [ "$(jq -r .manifest_sha256 /tmp/record.json)" = "$(node verify/cli.mjs digest "packs/$PACK/manifest.json")" ]
           { echo '### Zenodo sandbox rehearsal (a test record, not a permanent identifier)'; jq -r '"- test DOI: \(.doi)\n- record: \(.url)\n- manifest: \(.manifest_sha256)\n- files: \(.files | length), every checksum matched"' /tmp/record.json; } | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: 'Hugging Face - a private dataset repository, every file read back and compared, then deleted'
+        env:
+          DEPOSIT_TOKEN: ${{ secrets.HF_TOKEN }}
+          PACK: ${{ inputs.pack }}
+        run: |
+          set -euo pipefail
+          node verify/cli.mjs huggingface "packs/$PACK" "rehearsal-${{ github.run_id }}" rehearsal "https://github.com/${{ github.repository }}" > /tmp/hf.json
+          [ "$(jq -r .deleted /tmp/hf.json)" = true ] && [ "$(jq -r .manifest_sha256 /tmp/hf.json)" = "$(node verify/cli.mjs digest "packs/$PACK/manifest.json")" ]
+          { echo '### Hugging Face rehearsal (private repository, deleted)'; jq -r '"- files read back and equal: \(.files | length)\n- manifest: \(.manifest_sha256)\n- repository deleted: \(.deleted)"' /tmp/hf.json; } | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: 'OSF - a private project, a file uploaded, its SHA-256 compared, then deleted'
+        env:
+          DEPOSIT_TOKEN: ${{ secrets.OSF_TOKEN }}
+        run: |
+          set -euo pipefail
+          printf '# Rehearsal\n\nRun %s. Not a protocol.\n' "${{ github.run_id }}" > /tmp/protocol.md
+          node verify/cli.mjs osf /tmp/protocol.md "NEO AI Evaluations - rehearsal ${{ github.run_id }}" rehearsal > /tmp/osf.json
+          [ "$(jq -r .deleted /tmp/osf.json)" = true ] && [ "$(jq -r .sha256 /tmp/osf.json)" = "$(sha256sum /tmp/protocol.md | cut -d' ' -f1)" ]
+          { echo '### OSF rehearsal (private project, deleted)'; jq -r '"- SHA-256 computed by OSF equals ours: \(.sha256)\n- project deleted: \(.deleted)"' /tmp/osf.json; } | tee -a "$GITHUB_STEP_SUMMARY"
