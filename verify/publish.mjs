@@ -17,7 +17,14 @@ const text = (value) => new TextEncoder().encode(value);
 function caller(fetcher, token) {
   return async (step, url, init = {}, expect = 'json') => {
     const response = await fetcher(url, { ...init, headers: { Authorization: `Bearer ${token}`, ...(init.headers ?? {}) } });
-    if (!response.ok) throw new Error(`${step}: the service answered HTTP ${String(response.status)}`);
+    if (!response.ok) {
+      // What the service says of its refusal, when it says it in the usual place (JSON:API `errors[].detail`, or
+      // `error`): at most 160 characters, never the token. Nothing else of the body is repeated.
+      let said = '';
+      try { const body = await response.json(); said = String(body?.errors?.[0]?.detail ?? body?.error ?? ''); } catch { said = ''; }
+      said = said.replaceAll(token, '[token]').replace(/\s+/g, ' ').slice(0, 160);
+      throw new Error(`${step}: the service answered HTTP ${String(response.status)}${said === '' ? '' : ` (${said})`}`);
+    }
     if (expect === 'none') return null;
     return expect === 'bytes' ? new Uint8Array(await response.arrayBuffer()) : response.json();
   };
@@ -91,6 +98,8 @@ export async function depositProtocolOnOsf({ token, protocol, filename = 'protoc
   const ours = await sha256(protocol);
   const vnd = { 'Content-Type': 'application/vnd.api+json' };
   const description = `Protocol of an official test of NEO AI Evaluations, deposited before the test runs. SHA-256 of ${filename}: ${ours}. Holder: ${HOLDER}.`;
+  const me = await call('read the account', `${api}/users/me/`);
+  if (typeof me?.data?.id !== 'string') throw new Error('read the account: the answer names no account');
   const created = await call('create the project', `${api}/nodes/`, { method: 'POST', headers: vnd, body: JSON.stringify({ data: { type: 'nodes', attributes: { title: `${rehearsal ? '[REHEARSAL, to be deleted] ' : ''}${title}`, category: 'project', public: !rehearsal, description } } }) });
   const node = created?.data?.id;
   if (typeof node !== 'string' || !/^[a-z0-9]{4,10}$/.test(node)) throw new Error('create the project: the answer carries no project id');

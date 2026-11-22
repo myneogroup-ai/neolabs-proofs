@@ -314,7 +314,7 @@ function hub({ corrupt = null, failAt = null } = {}) {
     const method = init.method ?? 'GET';
     calls.push({ url, method, auth: init.headers?.Authorization });
     const step = url.endsWith('/api/whoami-v2') ? 'who' : url.endsWith('/api/repos/create') ? 'create' : url.includes('/commit/main') ? 'commit' : url.includes('/resolve/main/') ? 'read' : 'delete';
-    if (failAt === step) return answer(500, { error: `echo ${String(init.headers?.Authorization)}` });
+    if (failAt === step) return answer(500, { error: `refused, echo ${String(init.headers?.Authorization)}` });
     if (step === 'who') return answer(200, { name: 'neo-evaluations' });
     if (step === 'create') { exists = true; isPrivate = JSON.parse(init.body).private; return answer(200, { url: 'x' }); }
     if (step === 'commit') { for (const line of init.body.split('\n').map((l) => JSON.parse(l))) if (line.key === 'file') held.set(line.value.path, Uint8Array.from(Buffer.from(line.value.content, 'base64'))); return answer(200, { commitOid: 'abc123' }); }
@@ -373,6 +373,7 @@ test('OSF: the protocol goes to a project, the SHA-256 OSF computed is compared,
       const method = init.method ?? 'GET';
       calls.push({ url, method, auth: init.headers?.Authorization });
       const ok = (status, body) => ({ ok: status < 300, status, json: async () => body });
+      if (method === 'GET') return ok(200, { data: { id: 'abcde' } });
       if (method === 'POST') { exists = true; const sent = JSON.parse(init.body).data.attributes; isPublic = sent.public; return ok(201, { data: { id: 'ab3xz', attributes: sent } }); }
       if (method === 'PUT') return ok(201, { data: { attributes: { extra: { hashes: { sha256: hash } } } } });
       exists = false; return ok(204, null);
@@ -383,7 +384,7 @@ test('OSF: the protocol goes to a project, the SHA-256 OSF computed is compared,
   const record = await depositProtocolOnOsf({ token: 'fixture-token', protocol, title: 'Official Test No. 9 - protocol', fetcher: o1.fetcher });
   assert.deepEqual([record.node, record.sha256, record.deleted, record.url], ['ab3xz', digest, true, 'https://osf.io/ab3xz/']);
   assert.deepEqual(o1.state(), { exists: false, isPublic: false });
-  assert.match(o1.calls[1].url, /\/resources\/ab3xz\/providers\/osfstorage\/\?kind=file&name=protocol\.md$/);
+  assert.match(o1.calls[2].url, /\/resources\/ab3xz\/providers\/osfstorage\/\?kind=file&name=protocol\.md$/);
   const o2 = osf();
   const kept = await depositProtocolOnOsf({ token: 'fixture-token', protocol, title: 'Official Test No. 9 - protocol', rehearsal: false, fetcher: o2.fetcher });
   assert.deepEqual([kept.deleted, o2.state().exists, o2.state().isPublic], [false, true, true]);
