@@ -261,6 +261,7 @@ jobs:
           [ "$(jq -r .manifest_sha256 /tmp/record.json)" = "$(node verify/cli.mjs digest "packs/$PACK/manifest.json")" ]
           { echo '### Zenodo sandbox rehearsal (a test record, not a permanent identifier)'; jq -r '"- test DOI: \(.doi)\n- record: \(.url)\n- manifest: \(.manifest_sha256)\n- files: \(.files | length), every checksum matched"' /tmp/record.json; } | tee -a "$GITHUB_STEP_SUMMARY"
       - name: 'Hugging Face - a private dataset repository, every file read back and compared, then deleted'
+        if: always()
         env:
           DEPOSIT_TOKEN: ${{ secrets.HF_TOKEN }}
           PACK: ${{ inputs.pack }}
@@ -270,6 +271,8 @@ jobs:
           [ "$(jq -r .deleted /tmp/hf.json)" = true ] && [ "$(jq -r .manifest_sha256 /tmp/hf.json)" = "$(node verify/cli.mjs digest "packs/$PACK/manifest.json")" ]
           { echo '### Hugging Face rehearsal (private repository, deleted)'; jq -r '"- files read back and equal: \(.files | length)\n- manifest: \(.manifest_sha256)\n- repository deleted: \(.deleted)"' /tmp/hf.json; } | tee -a "$GITHUB_STEP_SUMMARY"
       - name: 'OSF - a private project, a file uploaded, its SHA-256 compared, then deleted'
+        # Tried even when the step before failed: each rehearsal is read on its own.
+        if: always()
         env:
           DEPOSIT_TOKEN: ${{ secrets.OSF_TOKEN }}
         run: |
