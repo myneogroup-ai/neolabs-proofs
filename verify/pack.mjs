@@ -14,6 +14,7 @@ import { randomnessMatches, readBeacon } from './drand.mjs';
 import { merkleRoot } from './merkle.mjs';
 import { drawSample } from './sample.mjs';
 import { differences, publishedOf, score } from './score.mjs';
+import { knownAnswers, thresholdOutcome } from './known.mjs';
 
 export const MANIFEST_SCHEMA = 'neolabs.manifest/1';
 export const INDEX_SCHEMA = 'neolabs.publication-index/1';
@@ -41,6 +42,13 @@ function contains(haystack, needle) {
 }
 
 /** Builds the manifest of a test. `files` is [{ path, role, bytes }]; `results` the public results document. */
+const KNOWN_RULES = [
+  'A successful task is an answer whose final answer equals the expected one (automatic comparison, no reviewer). A failed answer is not a successful task.',
+  'The cost of a system is the sum of the cost of all its answers, the failed ones included. Cost per successful task = that sum divided by the number of successful tasks.',
+  'Time: the median total time of the completed answers, in milliseconds.',
+  'The thresholds were fixed by the protocol before the run; the outcome is "met" only if every condition holds.',
+];
+
 export async function buildManifest({ test, campaign, versions, files, results, ledger, timestamps, costs, limits, generated_at, previous_manifest_sha256 = null, manifest_version = 1, corrections = undefined }) {
   const recomputed = score(results);
   const inventory = [];
@@ -75,6 +83,9 @@ export async function buildManifest({ test, campaign, versions, files, results, 
       ],
       units: { quality: 'points out of 10', total_ms: 'milliseconds', cost_micro_usd: 'millionths of a US dollar' },
       published: publishedOf(recomputed),
+      // A test on tasks with one known answer (Official Test No. 3 onwards): exact answers, cost per successful task,
+      // and the outcome of the thresholds its protocol fixed before the run (`campaign.thresholds`).
+      ...(campaign?.thresholds === undefined ? {} : (() => { const measures = knownAnswers(results); return { known_answers: { rules: KNOWN_RULES, published: measures, thresholds: campaign.thresholds, outcome: thresholdOutcome(measures, campaign.thresholds) } }; })()),
     },
     costs,
     proof_ledger: ledger,
@@ -125,8 +136,17 @@ export async function checkPack(read) {
     const root = await merkleRoot(results.rows);
     add('merkle', 'scores', root === manifest.results.merkle.root ? 'verified' : 'discrepancy', 'Merkle root of the results', root === manifest.results.merkle.root ? `Root ${root} over ${String(results.rows.length)} rows.` : `Recomputed ${root}; the manifest records ${manifest.results.merkle.root}.`);
     const diffs = differences(manifest.metrics.published, publishedOf(score(results)));
-    if (diffs.length === 0) add('scores', 'scores', 'verified', 'Scores', 'Every published figure (quality, time, cost, intervals, comparisons) is recomputed identically from the per-task results. The reviewers\' scores themselves are historical records: this check verifies their aggregation, not the reviewers\' judgement.');
+    if (diffs.length === 0 && (manifest.metrics.published?.judging?.scores ?? 0) === 0) add('scores', 'scores', 'verified', 'Statistics', 'Every published statistic (time, cost, intervals, comparisons) is recomputed identically from the per-task results. No reviewer scored an answer in this test.');
+    else if (diffs.length === 0) add('scores', 'scores', 'verified', 'Scores', 'Every published figure (quality, time, cost, intervals, comparisons) is recomputed identically from the per-task results. The reviewers\' scores themselves are historical records: this check verifies their aggregation, not the reviewers\' judgement.');
     else add('scores', 'scores', 'discrepancy', 'Scores', `${String(diffs.length)} published figures differ from the recomputation, for example ${diffs[0].path}: published ${String(diffs[0].published)}, recomputed ${String(diffs[0].recomputed)}.`);
+  }
+
+  const known = manifest.metrics?.known_answers;
+  if (known !== undefined && results !== null && results !== undefined && results.schema === RESULTS_SCHEMA) {
+    const measures = knownAnswers(results);
+    const diffs = differences({ published: known.published, outcome: known.outcome }, { published: measures, outcome: thresholdOutcome(measures, known.thresholds) });
+    if (diffs.length === 0) add('known', 'scores', 'verified', 'Exact answers and thresholds', `Exact answers, cost per successful task and the outcome of the thresholds ("${known.outcome.result}") are recomputed identically from the per-task results. Whether an answer is exact is the platform's recorded comparison: this check verifies the figures drawn from it, not the comparison.`);
+    else add('known', 'scores', 'discrepancy', 'Exact answers and thresholds', `${String(diffs.length)} published figures differ from the recomputation, for example ${diffs[0].path}: published ${String(diffs[0].published)}, recomputed ${String(diffs[0].recomputed)}.`);
   }
 
   // Provenance: the Proof Ledger entry and the time-stamps the manifest names.
