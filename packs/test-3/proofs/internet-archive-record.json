@@ -1,0 +1,37 @@
+{
+  "service": "internet-archive",
+  "rehearsal": false,
+  "identifier": "neo-ai-evaluations-test-3",
+  "url": "https://archive.org/details/neo-ai-evaluations-test-3",
+  "status": "verified",
+  "manifest_sha256": "53c569cc9228a28888b2bf78a8475f50710d7db38ac20384dac0aa02dd353fc9",
+  "doi": "10.5281/zenodo.24452513",
+  "files": [
+    {
+      "name": "manifest.json",
+      "sha256": "eff82c2d9ec06e9bacaf59d3a8b5088afcb3c2d32e8736e0bfd731daaec7f222",
+      "url": "https://archive.org/download/neo-ai-evaluations-test-3/manifest.json",
+      "status": "verified"
+    },
+    {
+      "name": "manifest.jcs",
+      "sha256": "53c569cc9228a28888b2bf78a8475f50710d7db38ac20384dac0aa02dd353fc9",
+      "url": "https://archive.org/download/neo-ai-evaluations-test-3/manifest.jcs",
+      "status": "verified"
+    },
+    {
+      "name": "results.json",
+      "sha256": "7f45862a98a1ae9a2dff825200f73bebb5858f456953ec20bbd2f2eceba83dfd",
+      "url": "https://archive.org/download/neo-ai-evaluations-test-3/results.json",
+      "status": "verified"
+    },
+    {
+      "name": "neo-ai-evaluations-official-test-3-public-edition.pdf",
+      "sha256": "278a001f8291f4191870924928233c2ffbd922f2060a505a9892e0782c69cd5d",
+      "url": "https://archive.org/download/neo-ai-evaluations-test-3/neo-ai-evaluations-official-test-3-public-edition.pdf",
+      "status": "verified"
+    }
+  ],
+  "checked_at": "2026-11-23T09:29:08.235Z",
+  "official_pdf_sha256": "278a001f8291f4191870924928233c2ffbd922f2060a505a9892e0782c69cd5d"
+}

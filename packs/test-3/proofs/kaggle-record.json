@@ -1,0 +1,10 @@
+{
+  "service": "kaggle",
+  "dataset": "neotechlabs/neo-ai-evaluations-test-3",
+  "version": 1,
+  "url": "https://www.kaggle.com/datasets/neotechlabs/neo-ai-evaluations-test-3/versions/1",
+  "manifest_sha256": "53c569cc9228a28888b2bf78a8475f50710d7db38ac20384dac0aa02dd353fc9",
+  "results_sha256": "7f45862a98a1ae9a2dff825200f73bebb5858f456953ec20bbd2f2eceba83dfd",
+  "official_pdf_sha256": "278a001f8291f4191870924928233c2ffbd922f2060a505a9892e0782c69cd5d",
+  "checked_at": "2026-11-23T09:29:42Z"
+}
