@@ -103,6 +103,27 @@ async function main(argv) {
     console.log(JSON.stringify(record, null, 2));
     return 0;
   }
+  if (command === 'internet-archive' || command === 'kaggle-folder') {
+    // node cli.mjs internet-archive <folder> <identifier> rehearsal|public [pdf] [doi] [report-url] [repository-url]
+    //   keys from IA_ACCESS_KEY and IA_SECRET_KEY; prints the record of the item.
+    // node cli.mjs kaggle-folder <folder> <owner> <slug> <out-folder> [pdf] [doi] [report-url] [repository-url]
+    //   writes the folder of the Kaggle dataset (the official Kaggle client uploads it).
+    const { publishToInternetArchive, kaggleFolder } = await import('./archive.mjs');
+    const read = async (path) => (existsSync(join(args[0], path)) ? new Uint8Array(readFileSync(join(args[0], path))) : null);
+    const rest = command === 'internet-archive' ? args.slice(3) : args.slice(4);
+    const pdf = rest[0] ? { name: rest[0].split('/').pop(), bytes: new Uint8Array(readFileSync(rest[0])) } : null;
+    const extra = { pdf, doi: rest[1] || null, report: rest[2] || null, repository: rest[3] || null };
+    if (command === 'internet-archive') {
+      if (args[2] !== 'rehearsal' && args[2] !== 'public') { console.error('the third argument is rehearsal or public'); return 2; }
+      const record = await publishToInternetArchive({ accessKey: process.env.IA_ACCESS_KEY ?? '', secretKey: process.env.IA_SECRET_KEY ?? '', read, identifier: args[1], rehearsal: args[2] === 'rehearsal', ...extra });
+      console.log(JSON.stringify(record, null, 2));
+      return 0;
+    }
+    const { mkdirSync, writeFileSync } = await import('node:fs');
+    mkdirSync(args[3], { recursive: true });
+    for (const file of await kaggleFolder({ read, owner: args[1], slug: args[2], ...extra })) writeFileSync(join(args[3], file.name), file.bytes);
+    return 0;
+  }
   if (command === 'sample') { console.log(JSON.stringify(await drawSample(JSON.parse(readFileSync(args[0], 'utf8')), args[1], Number(args[2])))); return 0; }
   console.error('usage: cli.mjs verify <folder> | build <config.json> <out> | digest <manifest.json> | sample <ids.json> <randomness> <size> | drand <beacon.json> <chain.json> | deposit <folder> <api-base> [repository-url] | huggingface <folder> <name> rehearsal|public [repository-url] | osf <protocol-file> <title> rehearsal|public');
   return 2;
