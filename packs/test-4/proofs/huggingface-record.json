@@ -1,0 +1,43 @@
+{
+  "service": "huggingface",
+  "rehearsal": false,
+  "repository": "NEOTECHLABS/neo-ai-evaluations-test-4",
+  "url": "https://huggingface.co/datasets/NEOTECHLABS/neo-ai-evaluations-test-4",
+  "commit": "57376bb1d565db4987d3e318c526686ac5d30a8e",
+  "manifest_sha256": "ba43d28134ab81764b9e642df31c6b517be79022c39a7209d90f18cbc42afd41",
+  "files": [
+    {
+      "name": "manifest.json",
+      "sha256": "f1389e74b8dc64750dac5f09148064a42fc3a10b11a4ff96944b4994fa87ca5d"
+    },
+    {
+      "name": "manifest.jcs",
+      "sha256": "ba43d28134ab81764b9e642df31c6b517be79022c39a7209d90f18cbc42afd41"
+    },
+    {
+      "name": "digicert-trusted-root-g4.pem",
+      "sha256": "ce7d6b44f5d510391be98c8d76b18709400a30cd87659bfebe1c6f97ff5181ee"
+    },
+    {
+      "name": "freetsa-cacert.pem",
+      "sha256": "2151b61137ffa86bf664691ba67e7da0b19f98c758e3d228d5d8ebf27e044438"
+    },
+    {
+      "name": "ledger-entry-3669.json",
+      "sha256": "564a1e0bd8c91fcdaefcb0f15be91b2d11f13c985f6fb1922e8f215822c2299a"
+    },
+    {
+      "name": "protocol-test-4.md",
+      "sha256": "64ab001bd00a8af71ba05c4af88de2d6d19fb43af8df976cfc366d502b6dc5d1"
+    },
+    {
+      "name": "results.json",
+      "sha256": "ae759db8a4b6757bc31674837bfbc4c31d70989b9cbdfdb5b3c1ffcd16ce4dc0"
+    },
+    {
+      "name": "README.md",
+      "sha256": "86d7484696e6dd750e11e198c626e2816a7bf8f6ae13db7173bb318a42c97282"
+    }
+  ],
+  "deleted": false
+}

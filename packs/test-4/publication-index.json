@@ -1,7 +1,7 @@
 {
   "schema": "neolabs.publication-index/1",
   "manifest_sha256": "ba43d28134ab81764b9e642df31c6b517be79022c39a7209d90f18cbc42afd41",
-  "updated_at": "2026-11-23T13:43:25Z",
+  "updated_at": "2026-11-23T13:47:44.654Z",
   "proofs": [
     {
       "provider": "FreeTSA",
@@ -14,13 +14,22 @@
       "checked_at": "2026-11-23T13:43:20Z"
     },
     {
+      "provider": "Hugging Face (dataset)",
+      "group": "provenance",
+      "status": "verified",
+      "file": "proofs/huggingface-record.json",
+      "must_name_manifest_digest": true,
+      "url": "https://huggingface.co/datasets/NEOTECHLABS/neo-ai-evaluations-test-4",
+      "detail": "The per-task public results as an open dataset: https://huggingface.co/datasets/NEOTECHLABS/neo-ai-evaluations-test-4. Every file was read back and has the SHA-256 of the pack."
+    },
+    {
       "provider": "OpenTimestamps (Bitcoin)",
       "group": "date",
       "status": "pending",
       "file": "proofs/manifest.jcs.ots",
       "must_contain_manifest_digest": true,
       "detail": "Submitted to the public calendars; awaiting confirmation in a Bitcoin block.",
-      "checked_at": "2026-11-23T13:43:24Z"
+      "checked_at": "2026-11-23T13:47:40Z"
     },
     {
       "provider": "Sigstore (Fulcio, Rekor)",
