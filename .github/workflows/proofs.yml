@@ -292,12 +292,12 @@ jobs:
           rm -rf /tmp/kaggle /tmp/kaggle-back && node verify/cli.mjs kaggle-folder "$pack" "$OWNER" "$slug" /tmp/kaggle "$PDF" "$DOI" "$REPORT" "https://github.com/${{ github.repository }}"
           # One dataset per test; a corrected edition (a new manifest) is a new version of the same dataset.
           if kaggle datasets status "$OWNER/$slug" >/dev/null 2>&1; then
-            kaggle datasets version -p /tmp/kaggle -m "Edition ${digest:0:12}" --quiet
+            kaggle datasets version -p /tmp/kaggle -m "Edition ${digest:0:12}"
           else
-            kaggle datasets create -p /tmp/kaggle --public --quiet
+            kaggle datasets create -p /tmp/kaggle --public
           fi
           for attempt in $(seq 1 30); do [ "$(kaggle datasets status "$OWNER/$slug" 2>/dev/null | tail -1)" = ready ] && break; sleep 20; done
-          kaggle datasets download "$OWNER/$slug" -p /tmp/kaggle-back --unzip --quiet
+          kaggle datasets download "$OWNER/$slug" -p /tmp/kaggle-back --unzip
           for name in results.json manifest.json "$(basename "$PDF")"; do
             [ "$(sha256sum "/tmp/kaggle-back/$name" | cut -d' ' -f1)" = "$(sha256sum "/tmp/kaggle/$name" | cut -d' ' -f1)" ] || { echo "$name: Kaggle serves another content than the file sent"; exit 1; }
           done
@@ -447,7 +447,7 @@ jobs:
           pip install --quiet kaggle
           node verify/cli.mjs kaggle-folder "packs/$PACK" "$OWNER" "neo-ai-evaluations-$PACK" /tmp/kaggle
           kaggle --version
-          kaggle datasets list --mine --quiet | head -5
+          kaggle datasets list --mine | head -5
           { echo '### Kaggle rehearsal (nothing created)'; echo "- token accepted; folder of $(ls /tmp/kaggle | wc -l) files built for $OWNER/neo-ai-evaluations-$PACK"; } | tee -a "$GITHUB_STEP_SUMMARY"
       - name: 'OSF - a private project, a file uploaded, its SHA-256 compared, then deleted'
         # Tried even when the step before failed: each rehearsal is read on its own.
