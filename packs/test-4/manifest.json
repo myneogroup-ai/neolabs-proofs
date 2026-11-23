@@ -1,0 +1,945 @@
+{
+  "schema": "neolabs.manifest/1",
+  "manifest_version": 1,
+  "previous_manifest_sha256": null,
+  "generated_at": "2026-11-23T13:45:00.000Z",
+  "test": {
+    "id": "test-4",
+    "number": 4,
+    "title": "NEOLABS Official Test No. 4",
+    "report": "https://lilineo.com/neolabs/official-tests/test-4/"
+  },
+  "campaign": {
+    "lab_run_id": "01a2085e-f80a-7484-8825-298e2ec04b18",
+    "declared_started_at": "2026-11-23T12:26:11.338Z",
+    "declared_finished_at": "2026-11-23T13:29:26.175Z",
+    "dates_note": "The dates of execution are declared by NEO AI. The dates attested by third parties are those of the time-stamps: the protocol at 12:24:14Z and 12:24:15Z on 23 November 2026 (FreeTSA, DigiCert), the ledger entry of the campaign at 13:29:26Z (DigiCert), this pack when it was generated and stamped.",
+    "seed": "ff3d8ed917441c50",
+    "task_set_version": "v6-2026-11-22",
+    "class": "known answer (reasoning, data, code)",
+    "tasks": 99,
+    "systems": 5,
+    "interruptions": 0,
+    "preregistration": {
+      "status": "verified",
+      "file": "protocol-test-4.md",
+      "sha256": "64ab001bd00a8af71ba05c4af88de2d6d19fb43af8df976cfc366d502b6dc5d1",
+      "published": "https://github.com/myneogroup-ai/neolabs-proofs/blob/main/protocols/test-4.md",
+      "timestamps": [
+        {
+          "authority": "FreeTSA",
+          "standard": "RFC 3161",
+          "time": "2026-11-23T12:24:14Z",
+          "file": "protocol-test-4.freetsa.tsr"
+        },
+        {
+          "authority": "DigiCert",
+          "standard": "RFC 3161",
+          "time": "2026-11-23T12:24:15Z",
+          "file": "protocol-test-4.digicert.tsr"
+        }
+      ],
+      "detail": "The protocol (systems, 99 tasks, measures, two thresholds, round of the public draw, stop rules) was published in the public proof repository and time-stamped by FreeTSA at 12:24:14Z and by DigiCert at 12:24:15Z on 23 November 2026, before the first answer was requested at 12:26:11Z (time declared by NEO AI). It is in this pack with its time-stamp tokens; it was signed with Sigstore and committed to OpenTimestamps by the public workflow. It was not deposited in an academic registry. This test repeats Official Test No. 3 on the same 99 tasks with the same thresholds, which were known from that test: it is a repetition, not a blind test."
+    },
+    "thresholds": {
+      "subject": "profile:auto",
+      "references": [
+        "model:model:anthropic/claude/claude-opus-5-5@2026-10-11",
+        "model:model:openai/gpt/gpt-5.5@2026-10-11"
+      ],
+      "cost_reduction_min": 0.3,
+      "accuracy_gap_max_points": 7
+    },
+    "public_sample": {
+      "status": "pending",
+      "round": 34217812,
+      "size": 10,
+      "chain_hash": "52db9ba70e0cc0f6eaf7803dd07447a1f5477735fd3f661792ba94600c84e971",
+      "round_time": "2026-11-23T18:00:00Z",
+      "detail": "The protocol fixed round 34217812 of the drand quicknet beacon (due at 18:00:00Z on 23 November 2026) and a sample of ten tasks before the run. This manifest was sealed before that round existed. The round and the sample it draws are recorded in the publication index once the League of Entropy has published the round."
+    }
+  },
+  "versions": {
+    "lili": {
+      "commit": "1d9789a",
+      "note": "Production revision of the platform read at the start and at the end of the campaign (no deployment during the campaign); each LILI profile as configured on 23 November 2026."
+    },
+    "systems": {
+      "profile:auto": "NEO AUTO",
+      "profile:auto.economy": "NEO PRIME",
+      "profile:auto.fast": "NEO PULSE",
+      "model:model:anthropic/claude/claude-opus-5-5@2026-10-11": "Claude Opus 5.5 (reference)",
+      "model:model:openai/gpt/gpt-5.5@2026-10-11": "GPT-5.5 (reference)"
+    },
+    "protocol": "Protocol of Official Test No. 4 (protocol-test-4.md in this pack): identical tasks with one known answer, live calls, one pass, automatic comparison of the final answer with the expected one, no reviewer.",
+    "rubric": "None: an answer is exact or it is not.",
+    "scorer": {
+      "name": "neolabs/verify (known.mjs, score.mjs, stats.mjs)",
+      "commit": "ba530ee",
+      "note": "known.mjs recomputes exact answers, cost per successful task and the outcome of the thresholds; score.mjs is the published copy of the Model Lab statistics."
+    }
+  },
+  "files": [
+    {
+      "path": "digicert-trusted-root-g4.pem",
+      "role": "DigiCert Trusted Root G4 (public certificate)",
+      "bytes": 1988,
+      "sha256": "ce7d6b44f5d510391be98c8d76b18709400a30cd87659bfebe1c6f97ff5181ee"
+    },
+    {
+      "path": "freetsa-cacert.pem",
+      "role": "FreeTSA root certificate (public)",
+      "bytes": 2833,
+      "sha256": "2151b61137ffa86bf664691ba67e7da0b19f98c758e3d228d5d8ebf27e044438"
+    },
+    {
+      "path": "freetsa-tsa.crt",
+      "role": "FreeTSA time-stamp certificate (public)",
+      "bytes": 2273,
+      "sha256": "8bfb0305bb64e2571ca507552ef3245cb1c2fee8728e0ff8689225081ea13467"
+    },
+    {
+      "path": "ledger-entry-3669.json",
+      "role": "Proof Ledger entry no. 3669 (the seal of the campaign)",
+      "bytes": 3797,
+      "sha256": "564a1e0bd8c91fcdaefcb0f15be91b2d11f13c985f6fb1922e8f215822c2299a"
+    },
+    {
+      "path": "protocol-test-4.digicert.tsr",
+      "role": "RFC 3161 time-stamp token of the protocol (DigiCert)",
+      "bytes": 5995,
+      "sha256": "1bed0cfa49dd9921cc8e8d42a44e2452a6874555e0359dd6def01ddc4719bbb7"
+    },
+    {
+      "path": "protocol-test-4.freetsa.tsr",
+      "role": "RFC 3161 time-stamp token of the protocol (FreeTSA)",
+      "bytes": 4632,
+      "sha256": "3ace715556d8f20de2ca945f78a66a43ee4712573f448a78d7d8a27dba5e69d9"
+    },
+    {
+      "path": "protocol-test-4.md",
+      "role": "Protocol, published and time-stamped before the run",
+      "bytes": 7949,
+      "sha256": "64ab001bd00a8af71ba05c4af88de2d6d19fb43af8df976cfc366d502b6dc5d1"
+    },
+    {
+      "path": "results.json",
+      "role": "Per-task results (public rows)",
+      "bytes": 134375,
+      "sha256": "ae759db8a4b6757bc31674837bfbc4c31d70989b9cbdfdb5b3c1ffcd16ce4dc0"
+    },
+    {
+      "path": "test-4-ledger-3669.tsr",
+      "role": "RFC 3161 time-stamp token of the ledger entry (DigiCert)",
+      "bytes": 6006,
+      "sha256": "cbedf7ed93704f94792d759f3f3d91046b7d24079860a17233a41fe34c18e43f"
+    }
+  ],
+  "results": {
+    "file": "results.json",
+    "rows": 495,
+    "by_status": {
+      "completed": 486,
+      "failed": 9
+    },
+    "tasks": [
+      "c58-fr",
+      "c59-en",
+      "c60-fr",
+      "c61-en",
+      "c62-fr",
+      "c63-en",
+      "c64-fr",
+      "c65-en",
+      "c66-fr",
+      "c67-en",
+      "c68-fr",
+      "c69-en",
+      "c70-fr",
+      "c71-en",
+      "c72-fr",
+      "c73-en",
+      "c74-fr",
+      "c75-en",
+      "c76-fr",
+      "c77-en",
+      "c78-fr",
+      "c79-en",
+      "c80-fr",
+      "c81-en",
+      "c82-fr",
+      "c83-en",
+      "c84-fr",
+      "d100-fr",
+      "d101-en",
+      "d102-fr",
+      "d103-en",
+      "d104-fr",
+      "d105-en",
+      "d106-fr",
+      "d107-en",
+      "d108-fr",
+      "d109-en",
+      "d110-fr",
+      "d75-en",
+      "d76-fr",
+      "d77-en",
+      "d78-fr",
+      "d79-en",
+      "d80-fr",
+      "d81-en",
+      "d82-fr",
+      "d83-en",
+      "d84-fr",
+      "d85-en",
+      "d86-fr",
+      "d87-en",
+      "d88-fr",
+      "d89-en",
+      "d90-fr",
+      "d91-en",
+      "d92-fr",
+      "d93-en",
+      "d94-fr",
+      "d95-en",
+      "d96-fr",
+      "d97-en",
+      "d98-fr",
+      "d99-en",
+      "r107-en",
+      "r108-fr",
+      "r109-en",
+      "r110-fr",
+      "r111-en",
+      "r112-fr",
+      "r113-en",
+      "r114-fr",
+      "r115-en",
+      "r116-fr",
+      "r117-en",
+      "r118-fr",
+      "r119-en",
+      "r120-fr",
+      "r121-en",
+      "r122-fr",
+      "r123-en",
+      "r124-fr",
+      "r125-en",
+      "r126-fr",
+      "r127-en",
+      "r128-fr",
+      "r129-en",
+      "r130-fr",
+      "r131-en",
+      "r132-fr",
+      "r133-en",
+      "r134-fr",
+      "r135-en",
+      "r136-fr",
+      "r137-en",
+      "r138-fr",
+      "r139-en",
+      "r140-fr",
+      "r141-en",
+      "r142-fr"
+    ],
+    "systems": [
+      "model:model:anthropic/claude/claude-opus-5-5@2026-10-11",
+      "model:model:openai/gpt/gpt-5.5@2026-10-11",
+      "profile:auto",
+      "profile:auto.economy",
+      "profile:auto.fast"
+    ],
+    "exclusions": [],
+    "merkle": {
+      "construction": "RFC 6962 (SHA-256); leaf = RFC 8785 form of the row",
+      "leaves": 495,
+      "root": "6a029962c0fe7c3cb13ff42a01e205b77b3bda7e836aa8ca9bc9a6114c228002"
+    }
+  },
+  "metrics": {
+    "rules": [
+      "Judged quality of an answer: the mean of its reviewers' scores (1 to 10). Judged quality of a system: the mean over its completed answers that carry a score; n is that count.",
+      "Time: the median total time of the completed answers, in milliseconds. Cost: the mean cost of the completed answers, in millionths of a US dollar, as computed by the platform from the token counts reported by the providers and the price table in force.",
+      "Intervals: 95% percentile bootstrap, 2,000 resamples, seeded with the seed of the campaign.",
+      "Comparisons: one LILI profile against one reference on the tasks both completed; paired sign-flip test, 20,000 flips, seeded; significant at 0.05 after Holm's correction over all comparisons; at least 10 pairs.",
+      "Figures are stored at full precision; a page or a report rounds for display only."
+    ],
+    "units": {
+      "quality": "points out of 10",
+      "total_ms": "milliseconds",
+      "cost_micro_usd": "millionths of a US dollar"
+    },
+    "published": {
+      "systems": {
+        "profile:auto": {
+          "answers": 99,
+          "completed": 99,
+          "quality": {
+            "value": null,
+            "low": null,
+            "high": null,
+            "n": 0
+          },
+          "total_ms": {
+            "value": 10889,
+            "low": 8843,
+            "high": 13009,
+            "n": 99
+          },
+          "cost_micro_usd": {
+            "value": 26275.777777777777,
+            "low": 19829,
+            "high": 34068.88888888889,
+            "n": 99
+          }
+        },
+        "profile:auto.economy": {
+          "answers": 99,
+          "completed": 92,
+          "quality": {
+            "value": null,
+            "low": null,
+            "high": null,
+            "n": 0
+          },
+          "total_ms": {
+            "value": 9263.5,
+            "low": 8183,
+            "high": 10478,
+            "n": 92
+          },
+          "cost_micro_usd": {
+            "value": 4031.8695652173915,
+            "low": 3309.8695652173915,
+            "high": 4820,
+            "n": 92
+          }
+        },
+        "profile:auto.fast": {
+          "answers": 99,
+          "completed": 97,
+          "quality": {
+            "value": null,
+            "low": null,
+            "high": null,
+            "n": 0
+          },
+          "total_ms": {
+            "value": 7625,
+            "low": 6439,
+            "high": 8878,
+            "n": 97
+          },
+          "cost_micro_usd": {
+            "value": 23201.567010309278,
+            "low": 16357.927835051547,
+            "high": 30301.443298969072,
+            "n": 97
+          }
+        },
+        "model:model:anthropic/claude/claude-opus-5-5@2026-10-11": {
+          "answers": 99,
+          "completed": 99,
+          "quality": {
+            "value": null,
+            "low": null,
+            "high": null,
+            "n": 0
+          },
+          "total_ms": {
+            "value": 8913,
+            "low": 8383,
+            "high": 10108,
+            "n": 99
+          },
+          "cost_micro_usd": {
+            "value": 42598.292929292926,
+            "low": 38200.74747474748,
+            "high": 49686.47474747475,
+            "n": 99
+          }
+        },
+        "model:model:openai/gpt/gpt-5.5@2026-10-11": {
+          "answers": 99,
+          "completed": 99,
+          "quality": {
+            "value": null,
+            "low": null,
+            "high": null,
+            "n": 0
+          },
+          "total_ms": {
+            "value": 12073,
+            "low": 11415,
+            "high": 12671,
+            "n": 99
+          },
+          "cost_micro_usd": {
+            "value": 63097.85858585859,
+            "low": 58822.26262626263,
+            "high": 67666.85858585859,
+            "n": 99
+          }
+        }
+      },
+      "claims": [
+        {
+          "measure": "quality",
+          "profile": "profile:auto",
+          "model": "model:model:anthropic/claude/claude-opus-5-5@2026-10-11",
+          "pairs": 0,
+          "difference": {
+            "value": null,
+            "low": null,
+            "high": null,
+            "n": 0
+          },
+          "p": null,
+          "supported": false
+        },
+        {
+          "measure": "exact",
+          "profile": "profile:auto",
+          "model": "model:model:anthropic/claude/claude-opus-5-5@2026-10-11",
+          "pairs": 99,
+          "difference": {
+            "value": 0,
+            "low": 0,
+            "high": 0,
+            "n": 99
+          },
+          "p": 1,
+          "supported": false
+        },
+        {
+          "measure": "total_ms",
+          "profile": "profile:auto",
+          "model": "model:model:anthropic/claude/claude-opus-5-5@2026-10-11",
+          "pairs": 99,
+          "difference": {
+            "value": 4053.3535353535353,
+            "low": 2080.40404040404,
+            "high": 6391.111111111111,
+            "n": 99
+          },
+          "p": 0.00004999750012499375,
+          "supported": true
+        },
+        {
+          "measure": "cost",
+          "profile": "profile:auto",
+          "model": "model:model:anthropic/claude/claude-opus-5-5@2026-10-11",
+          "pairs": 99,
+          "difference": {
+            "value": -16322.515151515152,
+            "low": -26181.060606060608,
+            "high": -7681.363636363636,
+            "n": 99
+          },
+          "p": 0.00024998750062496874,
+          "supported": true
+        },
+        {
+          "measure": "quality",
+          "profile": "profile:auto",
+          "model": "model:model:openai/gpt/gpt-5.5@2026-10-11",
+          "pairs": 0,
+          "difference": {
+            "value": null,
+            "low": null,
+            "high": null,
+            "n": 0
+          },
+          "p": null,
+          "supported": false
+        },
+        {
+          "measure": "exact",
+          "profile": "profile:auto",
+          "model": "model:model:openai/gpt/gpt-5.5@2026-10-11",
+          "pairs": 99,
+          "difference": {
+            "value": 0,
+            "low": 0,
+            "high": 0,
+            "n": 99
+          },
+          "p": 1,
+          "supported": false
+        },
+        {
+          "measure": "total_ms",
+          "profile": "profile:auto",
+          "model": "model:model:openai/gpt/gpt-5.5@2026-10-11",
+          "pairs": 99,
+          "difference": {
+            "value": -272.8181818181818,
+            "low": -2528.929292929293,
+            "high": 2001.7575757575758,
+            "n": 99
+          },
+          "p": 0.8063596820158992,
+          "supported": false
+        },
+        {
+          "measure": "cost",
+          "profile": "profile:auto",
+          "model": "model:model:openai/gpt/gpt-5.5@2026-10-11",
+          "pairs": 99,
+          "difference": {
+            "value": -36822.080808080806,
+            "low": -43940.17171717172,
+            "high": -29138.363636363636,
+            "n": 99
+          },
+          "p": 0.00004999750012499375,
+          "supported": true
+        },
+        {
+          "measure": "quality",
+          "profile": "profile:auto.economy",
+          "model": "model:model:anthropic/claude/claude-opus-5-5@2026-10-11",
+          "pairs": 0,
+          "difference": {
+            "value": null,
+            "low": null,
+            "high": null,
+            "n": 0
+          },
+          "p": null,
+          "supported": false
+        },
+        {
+          "measure": "exact",
+          "profile": "profile:auto.economy",
+          "model": "model:model:anthropic/claude/claude-opus-5-5@2026-10-11",
+          "pairs": 92,
+          "difference": {
+            "value": -0.1956521739130435,
+            "low": -0.2826086956521739,
+            "high": -0.11956521739130435,
+            "n": 92
+          },
+          "p": 0.00004999750012499375,
+          "supported": true
+        },
+        {
+          "measure": "total_ms",
+          "profile": "profile:auto.economy",
+          "model": "model:model:anthropic/claude/claude-opus-5-5@2026-10-11",
+          "pairs": 92,
+          "difference": {
+            "value": 9198.423913043478,
+            "low": 2912.3260869565215,
+            "high": 17876.260869565216,
+            "n": 92
+          },
+          "p": 0.0015499225038748063,
+          "supported": true
+        },
+        {
+          "measure": "cost",
+          "profile": "profile:auto.economy",
+          "model": "model:model:anthropic/claude/claude-opus-5-5@2026-10-11",
+          "pairs": 92,
+          "difference": {
+            "value": -39305.45652173913,
+            "low": -46146.934782608696,
+            "high": -34415.19565217391,
+            "n": 92
+          },
+          "p": 0.00004999750012499375,
+          "supported": true
+        },
+        {
+          "measure": "quality",
+          "profile": "profile:auto.economy",
+          "model": "model:model:openai/gpt/gpt-5.5@2026-10-11",
+          "pairs": 0,
+          "difference": {
+            "value": null,
+            "low": null,
+            "high": null,
+            "n": 0
+          },
+          "p": null,
+          "supported": false
+        },
+        {
+          "measure": "exact",
+          "profile": "profile:auto.economy",
+          "model": "model:model:openai/gpt/gpt-5.5@2026-10-11",
+          "pairs": 92,
+          "difference": {
+            "value": -0.1956521739130435,
+            "low": -0.2826086956521739,
+            "high": -0.11956521739130435,
+            "n": 92
+          },
+          "p": 0.00004999750012499375,
+          "supported": true
+        },
+        {
+          "measure": "total_ms",
+          "profile": "profile:auto.economy",
+          "model": "model:model:openai/gpt/gpt-5.5@2026-10-11",
+          "pairs": 92,
+          "difference": {
+            "value": 5137.5,
+            "low": -1217.7391304347825,
+            "high": 14676.54347826087,
+            "n": 92
+          },
+          "p": 0.22098895055247236,
+          "supported": false
+        },
+        {
+          "measure": "cost",
+          "profile": "profile:auto.economy",
+          "model": "model:model:openai/gpt/gpt-5.5@2026-10-11",
+          "pairs": 92,
+          "difference": {
+            "value": -58885.86956521739,
+            "low": -63452.913043478264,
+            "high": -54484.44565217391,
+            "n": 92
+          },
+          "p": 0.00004999750012499375,
+          "supported": true
+        },
+        {
+          "measure": "quality",
+          "profile": "profile:auto.fast",
+          "model": "model:model:anthropic/claude/claude-opus-5-5@2026-10-11",
+          "pairs": 0,
+          "difference": {
+            "value": null,
+            "low": null,
+            "high": null,
+            "n": 0
+          },
+          "p": null,
+          "supported": false
+        },
+        {
+          "measure": "exact",
+          "profile": "profile:auto.fast",
+          "model": "model:model:anthropic/claude/claude-opus-5-5@2026-10-11",
+          "pairs": 97,
+          "difference": {
+            "value": -0.26804123711340205,
+            "low": -0.36082474226804123,
+            "high": -0.18556701030927836,
+            "n": 97
+          },
+          "p": 0.00004999750012499375,
+          "supported": true
+        },
+        {
+          "measure": "total_ms",
+          "profile": "profile:auto.fast",
+          "model": "model:model:anthropic/claude/claude-opus-5-5@2026-10-11",
+          "pairs": 97,
+          "difference": {
+            "value": -1470.1752577319587,
+            "low": -2661.298969072165,
+            "high": -21.742268041237114,
+            "n": 97
+          },
+          "p": 0.019149042547872606,
+          "supported": false
+        },
+        {
+          "measure": "cost",
+          "profile": "profile:auto.fast",
+          "model": "model:model:anthropic/claude/claude-opus-5-5@2026-10-11",
+          "pairs": 97,
+          "difference": {
+            "value": -19656.134020618556,
+            "low": -29313.721649484534,
+            "high": -9962.164948453608,
+            "n": 97
+          },
+          "p": 0.0000999950002499875,
+          "supported": true
+        },
+        {
+          "measure": "quality",
+          "profile": "profile:auto.fast",
+          "model": "model:model:openai/gpt/gpt-5.5@2026-10-11",
+          "pairs": 0,
+          "difference": {
+            "value": null,
+            "low": null,
+            "high": null,
+            "n": 0
+          },
+          "p": null,
+          "supported": false
+        },
+        {
+          "measure": "exact",
+          "profile": "profile:auto.fast",
+          "model": "model:model:openai/gpt/gpt-5.5@2026-10-11",
+          "pairs": 97,
+          "difference": {
+            "value": -0.26804123711340205,
+            "low": -0.36082474226804123,
+            "high": -0.18556701030927836,
+            "n": 97
+          },
+          "p": 0.00004999750012499375,
+          "supported": true
+        },
+        {
+          "measure": "total_ms",
+          "profile": "profile:auto.fast",
+          "model": "model:model:openai/gpt/gpt-5.5@2026-10-11",
+          "pairs": 97,
+          "difference": {
+            "value": -5831.773195876289,
+            "low": -7290.40206185567,
+            "high": -4329.896907216495,
+            "n": 97
+          },
+          "p": 0.00004999750012499375,
+          "supported": true
+        },
+        {
+          "measure": "cost",
+          "profile": "profile:auto.fast",
+          "model": "model:model:openai/gpt/gpt-5.5@2026-10-11",
+          "pairs": 97,
+          "difference": {
+            "value": -40061.28865979381,
+            "low": -47909.0412371134,
+            "high": -31843.03092783505,
+            "n": 97
+          },
+          "p": 0.00004999750012499375,
+          "supported": true
+        }
+      ],
+      "comparisons": 24,
+      "supported": 13,
+      "judging": {
+        "answers": 495,
+        "answers_scored": 0,
+        "answers_with_two_scores": 0,
+        "scores": 0,
+        "tasks": 99,
+        "tasks_all_systems_scored": 0,
+        "mean_absolute_difference": null,
+        "within_one_point": null
+      }
+    },
+    "known_answers": {
+      "rules": [
+        "A successful task is an answer whose final answer equals the expected one (automatic comparison, no reviewer). A failed answer is not a successful task.",
+        "The cost of a system is the sum of the cost of all its answers, the failed ones included. Cost per successful task = that sum divided by the number of successful tasks.",
+        "Time: the median total time of the completed answers, in milliseconds.",
+        "The thresholds were fixed by the protocol before the run; the outcome is \"met\" only if every condition holds."
+      ],
+      "published": {
+        "systems": {
+          "model:model:anthropic/claude/claude-opus-5-5@2026-10-11": {
+            "answers": 99,
+            "completed": 99,
+            "exact": 99,
+            "exact_rate": 1,
+            "total_cost_micro_usd": 4217231,
+            "mean_cost_micro_usd": 42598.292929292926,
+            "median_cost_micro_usd": 36560,
+            "cost_per_success_micro_usd": 42598.292929292926,
+            "median_total_ms": 8913,
+            "by_class": {
+              "code": {
+                "answers": 27,
+                "exact": 27
+              },
+              "data": {
+                "answers": 36,
+                "exact": 36
+              },
+              "reasoning": {
+                "answers": 36,
+                "exact": 36
+              }
+            }
+          },
+          "model:model:openai/gpt/gpt-5.5@2026-10-11": {
+            "answers": 99,
+            "completed": 99,
+            "exact": 99,
+            "exact_rate": 1,
+            "total_cost_micro_usd": 6246688,
+            "mean_cost_micro_usd": 63097.85858585859,
+            "median_cost_micro_usd": 62848,
+            "cost_per_success_micro_usd": 63097.85858585859,
+            "median_total_ms": 12073,
+            "by_class": {
+              "code": {
+                "answers": 27,
+                "exact": 27
+              },
+              "data": {
+                "answers": 36,
+                "exact": 36
+              },
+              "reasoning": {
+                "answers": 36,
+                "exact": 36
+              }
+            }
+          },
+          "profile:auto": {
+            "answers": 99,
+            "completed": 99,
+            "exact": 99,
+            "exact_rate": 1,
+            "total_cost_micro_usd": 2601302,
+            "mean_cost_micro_usd": 26275.777777777777,
+            "median_cost_micro_usd": 2541,
+            "cost_per_success_micro_usd": 26275.777777777777,
+            "median_total_ms": 10889,
+            "by_class": {
+              "code": {
+                "answers": 27,
+                "exact": 27
+              },
+              "data": {
+                "answers": 36,
+                "exact": 36
+              },
+              "reasoning": {
+                "answers": 36,
+                "exact": 36
+              }
+            }
+          },
+          "profile:auto.economy": {
+            "answers": 99,
+            "completed": 92,
+            "exact": 74,
+            "exact_rate": 0.7474747474747475,
+            "total_cost_micro_usd": 529280,
+            "mean_cost_micro_usd": 5346.262626262626,
+            "median_cost_micro_usd": 2982,
+            "cost_per_success_micro_usd": 7152.4324324324325,
+            "median_total_ms": 9263.5,
+            "by_class": {
+              "code": {
+                "answers": 27,
+                "exact": 25
+              },
+              "data": {
+                "answers": 36,
+                "exact": 32
+              },
+              "reasoning": {
+                "answers": 36,
+                "exact": 17
+              }
+            }
+          },
+          "profile:auto.fast": {
+            "answers": 99,
+            "completed": 97,
+            "exact": 71,
+            "exact_rate": 0.7171717171717171,
+            "total_cost_micro_usd": 2458878,
+            "mean_cost_micro_usd": 24837.151515151516,
+            "median_cost_micro_usd": 7341,
+            "cost_per_success_micro_usd": 34632.08450704225,
+            "median_total_ms": 7625,
+            "by_class": {
+              "code": {
+                "answers": 27,
+                "exact": 26
+              },
+              "data": {
+                "answers": 36,
+                "exact": 32
+              },
+              "reasoning": {
+                "answers": 36,
+                "exact": 13
+              }
+            }
+          }
+        }
+      },
+      "thresholds": {
+        "subject": "profile:auto",
+        "references": [
+          "model:model:anthropic/claude/claude-opus-5-5@2026-10-11",
+          "model:model:openai/gpt/gpt-5.5@2026-10-11"
+        ],
+        "cost_reduction_min": 0.3,
+        "accuracy_gap_max_points": 7
+      },
+      "outcome": {
+        "conditions": [
+          {
+            "id": "cost",
+            "required_reduction": 0.3,
+            "subject_cost_per_success_micro_usd": 26275.777777777777,
+            "lowest_reference_cost_per_success_micro_usd": 42598.292929292926,
+            "reduction": 0.38317298720416304,
+            "met": true
+          },
+          {
+            "id": "accuracy_guard",
+            "max_gap_points": 7,
+            "subject_exact_rate": 1,
+            "highest_reference_exact_rate": 1,
+            "gap_points": 0,
+            "met": true
+          }
+        ],
+        "result": "met"
+      }
+    }
+  },
+  "costs": {
+    "computed": {
+      "scope": "Inference cost of each answer, computed by the platform from the token counts reported by the providers and the price table in force on the day, including the internal calls of a LILI profile",
+      "unit": "millionths of a US dollar per answer"
+    },
+    "reconciled": null,
+    "reconciliation_limit": "Provider invoices and usage reports are issued per organisation and per period, not per campaign: the cost of the answers of this test cannot be attributed from them. The per-answer costs are the platform's computation, not invoices.",
+    "out_of_scope": [
+      "Infrastructure and hosting of the platform"
+    ]
+  },
+  "proof_ledger": {
+    "entry": 3669,
+    "hash": "cb87417941d05e24f97749f9cdf9626d2ad6980ad9ae358639c655409be5439b",
+    "results_digest": "5599cfbb59eb2286485c0069eb6d5d49a24f049df34f941c522b9799354ae26d",
+    "file": "ledger-entry-3669.json",
+    "rule": "hash = SHA-256( prev_hash || canonical({id, at, kind, account_id, actor_id, run_id, conversation_id, message_id, payload}) ); canonical = JSON with object keys sorted and no spaces."
+  },
+  "timestamps": [
+    {
+      "authority": "DigiCert",
+      "standard": "RFC 3161",
+      "file": "test-4-ledger-3669.tsr",
+      "covers": "the hash of Proof Ledger entry no. 3669",
+      "imprint_sha256": "cb87417941d05e24f97749f9cdf9626d2ad6980ad9ae358639c655409be5439b",
+      "time": "2026-11-23T13:29:26Z",
+      "serial": "5cbd41f7ffc00fd34483c01b3c3e065e",
+      "verify_command": "openssl ts -verify -in test-4-ledger-3669.tsr -digest cb87417941d05e24f97749f9cdf9626d2ad6980ad9ae358639c655409be5439b -CAfile digicert-trusted-root-g4.pem"
+    }
+  ],
+  "limits": [
+    "The three leading systems answered every task exactly: these tasks do not separate them on accuracy. The test shows a difference of cost at equal accuracy on these tasks, not a difference of accuracy.",
+    "This test repeats Official Test No. 3 on the same 99 tasks, with the same thresholds: the tasks and the behaviour of the systems on them were known before the run. Ten of the tasks had been published in full after Test No. 3.",
+    "NEO AUTO was not the fastest system in this test: on the same tasks its answers took longer on average than those of one reference. The two thresholds of the protocol concern cost and accuracy, not time.",
+    "Nine answers of the two lighter LILI profiles ended in an error (7 for NEO PRIME, 2 for NEO PULSE); they are counted as not exact. 55 answers of NEO PULSE were priced with a price not verified against the provider's table, charged at the provider's highest known price.",
+    "One pass per task, 99 tasks, one day, each LILI profile as configured on that day: no confidence interval is claimed for the exact-answer rates or for the cost per successful task.",
+    "Whether an answer is exact is the platform's automatic comparison, recorded at the time: this pack verifies the figures drawn from it, not the comparison. The texts of the tasks and of the answers are not published, except the tasks of the public samples.",
+    "The ledger entry lists the reviewer models configured on the platform; none was called in this test (judgements: 0).",
+    "NEO AI ran the test on its own platform. No external party has supervised, reproduced or audited it."
+  ]
+}
