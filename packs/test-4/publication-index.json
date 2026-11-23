@@ -1,7 +1,7 @@
 {
   "schema": "neolabs.publication-index/1",
   "manifest_sha256": "ba43d28134ab81764b9e642df31c6b517be79022c39a7209d90f18cbc42afd41",
-  "updated_at": "2026-11-23T13:47:44.654Z",
+  "updated_at": "2026-11-23T23:59:25Z",
   "proofs": [
     {
       "provider": "FreeTSA",
@@ -25,11 +25,12 @@
     {
       "provider": "OpenTimestamps (Bitcoin)",
       "group": "date",
-      "status": "pending",
+      "status": "verified",
       "file": "proofs/manifest.jcs.ots",
       "must_contain_manifest_digest": true,
-      "detail": "Submitted to the public calendars; awaiting confirmation in a Bitcoin block.",
-      "checked_at": "2026-11-23T13:47:40Z"
+      "detail": "The proof commits the manifest to Bitcoin block 977211. Check it on your own node: ots verify proofs/manifest.jcs.ots",
+      "url": "https://blockstream.info/block-height/977211",
+      "checked_at": "2026-11-23T23:59:23Z"
     },
     {
       "provider": "Sigstore (Fulcio, Rekor)",
@@ -44,11 +45,26 @@
     {
       "provider": "drand (League of Entropy)",
       "group": "sample",
-      "status": "pending",
-      "external_id": "round 34217812",
-      "observed_before_round_at": "2026-11-23T13:43:25Z",
+      "kind": "drand-beacon",
+      "status": "verified",
+      "file": "proofs/drand-round.json",
+      "chain_file": "proofs/drand-chain.json",
+      "sample": [
+        "r134-fr",
+        "d110-fr",
+        "c83-en",
+        "c77-en",
+        "c68-fr",
+        "d77-en",
+        "d106-fr",
+        "r114-fr",
+        "d105-en",
+        "d109-en"
+      ],
       "round_time": "2026-11-23T18:00:00Z",
-      "detail": "Round 34217812 is not published yet (round time 2026-11-23T18:00:00Z). This workflow saw the manifest in the public repository at 2026-11-23T13:43:25Z, before the round."
+      "detail": "This workflow saw the manifest at 2026-11-23T13:43:25Z, before round time 2026-11-23T18:00:00Z.",
+      "verify_command": "npm install @noble/curves@1.9.7 && node verify/cli.mjs drand proofs/drand-round.json proofs/drand-chain.json",
+      "observed_before_round_at": "2026-11-23T13:43:25Z"
     }
   ]
 }
