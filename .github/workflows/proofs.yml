@@ -35,6 +35,14 @@ on:
         description: 'Record the Zenodo DOI of a published GitHub release of this repository as a proof of the pack: the DOI (10.5281/zenodo.N)'
         required: false
         default: ''
+      internet_archive:
+        description: 'Publish the edition (report PDF, manifest, results) as a PUBLIC Internet Archive item: type PUBLIC'
+        required: false
+        default: 'no'
+      kaggle:
+        description: 'Publish the per-task results of the edition as a PUBLIC Kaggle dataset: type PUBLIC'
+        required: false
+        default: 'no'
       preregister:
         description: 'Deposit protocols/<pack>.md in a PUBLIC OSF project, before the test runs (Founder go only): type PUBLIC'
         required: false
@@ -236,6 +244,71 @@ jobs:
             > "$pack/proofs/zenodo-release-record.json"
           node verify/cli.mjs proof "$pack" "$(jq -c '{provider:"Zenodo (release archive, DataCite DOI)",group:"provenance",status:"verified",file:"proofs/zenodo-release-record.json",must_name_manifest_digest:true,doi:.doi,url:.url,checked_at:.checked_at,detail:("Release " + .release + " of this repository is archived by Zenodo under DOI " + .doi + ". The archive was downloaded and holds the manifest of this pack, byte for byte.")}' "$pack/proofs/zenodo-release-record.json")"
           cat "$pack/proofs/zenodo-release-record.json" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Official report PDF of the edition, checked against the fingerprint the official site publishes
+        if: github.event_name == 'workflow_dispatch' && (inputs.internet_archive == 'PUBLIC' || inputs.kaggle == 'PUBLIC')
+        env:
+          PACK: ${{ inputs.pack }}
+          SITE: https://lilineo.com/evaluations
+        run: |
+          set -euo pipefail
+          printf '%s' "$PACK" | grep -Eq '^[a-z0-9-]+$' && [ -f "packs/$PACK/manifest.json" ] || { echo "packs/$PACK is not an evidence pack"; exit 1; }
+          mkdir -p /tmp/edition
+          curl -fsS --retry 3 --max-time 60 "$SITE/data/evaluations.json" -o /tmp/edition/evaluations.json
+          curl -fsS --retry 3 --max-time 60 "$SITE/neolabs-manifest.json" -o /tmp/edition/site-manifest.json
+          file="$(jq -r --arg id "$PACK" '.tests[] | select(.id == $id) | .publicPdf.file // empty' /tmp/edition/evaluations.json)"
+          printf '%s' "$file" | grep -Eq '^[a-z0-9.-]+\.pdf$' || { echo "The official site names no public PDF for $PACK"; exit 1; }
+          declared="$(jq -r --arg path "/evaluations/reports/$file" '.files[] | select(.path == $path) | .sha256' /tmp/edition/site-manifest.json)"
+          curl -fsS --retry 3 --max-time 120 "$SITE/reports/$file" -o "/tmp/edition/$file"
+          [ "$(sha256sum "/tmp/edition/$file" | cut -d' ' -f1)" = "$declared" ] || { echo "The PDF served by the official site does not have the fingerprint the site publishes"; exit 1; }
+          { echo "PDF=/tmp/edition/$file"; echo "PDF_SHA256=$declared"; echo "REPORT=$SITE/official-tests/$PACK/"; echo "DOI=$(jq -r '[.proofs[] | select(.doi != null) | .doi][0] // ""' "packs/$PACK/publication-index.json")"; } >> "$GITHUB_ENV"
+      - name: Internet Archive - one public item per edition, every file read back and compared
+        if: github.event_name == 'workflow_dispatch' && inputs.internet_archive == 'PUBLIC'
+        env:
+          IA_ACCESS_KEY: ${{ secrets.IA_ACCESS_KEY }}
+          IA_SECRET_KEY: ${{ secrets.IA_SECRET_KEY }}
+          PACK: ${{ inputs.pack }}
+        run: |
+          set -euo pipefail
+          pack="packs/$PACK"; provider='Internet Archive'
+          if [ "$(node verify/cli.mjs plan "$pack" "$provider")" = skip ]; then echo "This edition is already archived and verified."; exit 0; fi
+          mkdir -p "$pack/proofs"
+          node verify/cli.mjs internet-archive "$pack" "neo-ai-evaluations-$PACK" public "$PDF" "$DOI" "$REPORT" "https://github.com/${{ github.repository }}" > "$pack/proofs/internet-archive-record.json"
+          jq --arg sha "$PDF_SHA256" '. + {official_pdf_sha256: $sha}' "$pack/proofs/internet-archive-record.json" > /tmp/ia.json && mv /tmp/ia.json "$pack/proofs/internet-archive-record.json"
+          node verify/cli.mjs proof "$pack" "$(jq -c '{provider:"Internet Archive",group:"provenance",status:.status,external_id:.identifier,file:"proofs/internet-archive-record.json",must_name_manifest_digest:true,url:.url,checked_at:.checked_at,detail:(if .status == "verified" then "The report PDF, the manifest and the per-task results of this edition are a public item of the Internet Archive. Every file was downloaded again from the item and has the SHA-256 of the official file." else "The files were sent to the Internet Archive, which has not served all of them yet. The workflow reads them again at its next run." end)}' "$pack/proofs/internet-archive-record.json")"
+          jq -r '"- item: \(.url)\n- status: \(.status)\n- files: \(.files | length)"' "$pack/proofs/internet-archive-record.json" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Kaggle - the per-task results as a public dataset, downloaded again and compared
+        if: github.event_name == 'workflow_dispatch' && inputs.kaggle == 'PUBLIC'
+        env:
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+          OWNER: ${{ vars.KAGGLE_OWNER || 'neotechlabs' }}
+          PACK: ${{ inputs.pack }}
+        run: |
+          set -euo pipefail
+          pack="packs/$PACK"; provider='Kaggle (dataset)'; slug="neo-ai-evaluations-$PACK"
+          if [ "$(node verify/cli.mjs plan "$pack" "$provider")" = skip ]; then echo "This edition is already published as a Kaggle dataset."; exit 0; fi
+          [ -n "$KAGGLE_API_TOKEN" ] || { echo "No Kaggle token: nothing was attempted"; exit 1; }
+          pip install --quiet kaggle
+          digest="$(jq -r .manifest_sha256 "$pack/publication-index.json")"
+          rm -rf /tmp/kaggle /tmp/kaggle-back && node verify/cli.mjs kaggle-folder "$pack" "$OWNER" "$slug" /tmp/kaggle "$PDF" "$DOI" "$REPORT" "https://github.com/${{ github.repository }}"
+          # One dataset per test; a corrected edition (a new manifest) is a new version of the same dataset.
+          if kaggle datasets status "$OWNER/$slug" >/dev/null 2>&1; then
+            kaggle datasets version -p /tmp/kaggle -m "Edition ${digest:0:12}" --quiet
+          else
+            kaggle datasets create -p /tmp/kaggle --public --quiet
+          fi
+          for attempt in $(seq 1 30); do [ "$(kaggle datasets status "$OWNER/$slug" 2>/dev/null | tail -1)" = ready ] && break; sleep 20; done
+          kaggle datasets download "$OWNER/$slug" -p /tmp/kaggle-back --unzip --quiet
+          for name in results.json manifest.json "$(basename "$PDF")"; do
+            [ "$(sha256sum "/tmp/kaggle-back/$name" | cut -d' ' -f1)" = "$(sha256sum "/tmp/kaggle/$name" | cut -d' ' -f1)" ] || { echo "$name: Kaggle serves another content than the file sent"; exit 1; }
+          done
+          version="$(curl -fsS --max-time 60 "https://www.kaggle.com/api/v1/datasets/view/$OWNER/$slug" 2>/dev/null | jq -r '.currentVersionNumber // empty' || true)"
+          mkdir -p "$pack/proofs"
+          jq -n --arg owner "$OWNER" --arg slug "$slug" --arg version "$version" --arg digest "$digest" --arg pdf "$PDF_SHA256" \
+            --arg results "$(sha256sum /tmp/kaggle/results.json | cut -d' ' -f1)" --arg at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            '{service:"kaggle",dataset:($owner+"/"+$slug),version:(if $version == "" then null else ($version|tonumber) end),url:("https://www.kaggle.com/datasets/"+$owner+"/"+$slug+(if $version == "" then "" else "/versions/"+$version end)),manifest_sha256:$digest,results_sha256:$results,official_pdf_sha256:$pdf,checked_at:$at}' \
+            > "$pack/proofs/kaggle-record.json"
+          node verify/cli.mjs proof "$pack" "$(jq -c '{provider:"Kaggle (dataset)",group:"provenance",status:"verified",file:"proofs/kaggle-record.json",must_name_manifest_digest:true,url:.url,checked_at:.checked_at,detail:("The per-task public results, their data dictionary, the manifest and the report PDF as a public Kaggle dataset: " + .url + ". The results, the manifest and the PDF were downloaded again and have the SHA-256 of the official files.")}' "$pack/proofs/kaggle-record.json")"
+          cat "$pack/proofs/kaggle-record.json" | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Protocol of a test in a public OSF project, before the test (Founder go only)
         # The protocol is a file of this repository (protocols/<pack>.md), so it is also time-stamped by the steps
         # above. The project is public; the frozen registration is made from it by a person in OSF.
@@ -350,6 +423,32 @@ jobs:
           node verify/cli.mjs huggingface "packs/$PACK" "rehearsal-${{ github.run_id }}" rehearsal "https://github.com/${{ github.repository }}" > /tmp/hf.json
           [ "$(jq -r .deleted /tmp/hf.json)" = true ] && [ "$(jq -r .manifest_sha256 /tmp/hf.json)" = "$(node verify/cli.mjs digest "packs/$PACK/manifest.json")" ]
           { echo '### Hugging Face rehearsal (private repository, deleted)'; jq -r '"- files read back and equal: \(.files | length)\n- manifest: \(.manifest_sha256)\n- repository deleted: \(.deleted)"' /tmp/hf.json; } | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: 'Internet Archive - an item in its test collection (removed by the Archive), every file read back and compared'
+        if: always()
+        env:
+          IA_ACCESS_KEY: ${{ secrets.IA_ACCESS_KEY }}
+          IA_SECRET_KEY: ${{ secrets.IA_SECRET_KEY }}
+          PACK: ${{ inputs.pack }}
+        run: |
+          set -euo pipefail
+          digest="$(node verify/cli.mjs digest "packs/$PACK/manifest.json")"
+          node verify/cli.mjs internet-archive "packs/$PACK" "neo-ai-evaluations-rehearsal-${digest:0:12}" rehearsal > /tmp/ia.json
+          [ "$(jq -r .manifest_sha256 /tmp/ia.json)" = "$digest" ]
+          { echo '### Internet Archive rehearsal (test collection, removed by the Archive after about thirty days)'; jq -r '"- item: \(.url)\n- status: \(.status)\n- files: \(.files | length)"' /tmp/ia.json; } | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: 'Kaggle - the folder of the dataset is built and the token is accepted (nothing is created)'
+        if: always()
+        env:
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+          OWNER: ${{ vars.KAGGLE_OWNER || 'neotechlabs' }}
+          PACK: ${{ inputs.pack }}
+        run: |
+          set -euo pipefail
+          [ -n "$KAGGLE_API_TOKEN" ] || { echo "No Kaggle token"; exit 1; }
+          pip install --quiet kaggle
+          node verify/cli.mjs kaggle-folder "packs/$PACK" "$OWNER" "neo-ai-evaluations-$PACK" /tmp/kaggle
+          kaggle --version
+          kaggle datasets list --mine --quiet | head -5
+          { echo '### Kaggle rehearsal (nothing created)'; echo "- token accepted; folder of $(ls /tmp/kaggle | wc -l) files built for $OWNER/neo-ai-evaluations-$PACK"; } | tee -a "$GITHUB_STEP_SUMMARY"
       - name: 'OSF - a private project, a file uploaded, its SHA-256 compared, then deleted'
         # Tried even when the step before failed: each rehearsal is read on its own.
         if: always()
