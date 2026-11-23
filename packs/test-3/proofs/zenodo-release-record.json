@@ -1,0 +1,13 @@
+{
+  "doi": "10.5281/zenodo.24452513",
+  "url": "https://doi.org/10.5281/zenodo.24452513",
+  "record": "https://zenodo.org/records/24452513",
+  "release": "test-3-2026-11-22",
+  "archive": {
+    "name": "myneogroup-ai/neolabs-proofs-test-3-2026-11-22.zip",
+    "sha256": "5d1d78c1461b753236ea9f43127255a60f8dd459f9c0bd9c053359a9c4f7ecaa"
+  },
+  "manifest_sha256": "53c569cc9228a28888b2bf78a8475f50710d7db38ac20384dac0aa02dd353fc9",
+  "manifest_file_sha256": "eff82c2d9ec06e9bacaf59d3a8b5088afcb3c2d32e8736e0bfd731daaec7f222",
+  "checked_at": "2026-11-23T02:28:11Z"
+}

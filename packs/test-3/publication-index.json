@@ -1,7 +1,7 @@
 {
   "schema": "neolabs.publication-index/1",
   "manifest_sha256": "53c569cc9228a28888b2bf78a8475f50710d7db38ac20384dac0aa02dd353fc9",
-  "updated_at": "2026-11-22T15:17:54.516Z",
+  "updated_at": "2026-11-23T02:28:11.153Z",
   "proofs": [
     {
       "provider": "FreeTSA",
@@ -41,6 +41,17 @@
       "detail": "Signed by the workflow https://github.com/myneogroup-ai/neolabs-proofs/.github/workflows/proofs.yml@refs/heads/main; inclusion in Rekor verified.",
       "verify_command": "cosign verify-blob --bundle proofs/manifest.sigstore.json --certificate-identity https://github.com/myneogroup-ai/neolabs-proofs/.github/workflows/proofs.yml@refs/heads/main --certificate-oidc-issuer https://token.actions.githubusercontent.com proofs/manifest.jcs",
       "checked_at": "2026-11-22T09:32:16Z"
+    },
+    {
+      "provider": "Zenodo (release archive, DataCite DOI)",
+      "group": "provenance",
+      "status": "verified",
+      "file": "proofs/zenodo-release-record.json",
+      "must_name_manifest_digest": true,
+      "doi": "10.5281/zenodo.24452513",
+      "url": "https://doi.org/10.5281/zenodo.24452513",
+      "checked_at": "2026-11-23T02:28:11Z",
+      "detail": "Release test-3-2026-11-22 of this repository is archived by Zenodo under DOI 10.5281/zenodo.24452513. The archive was downloaded and holds the manifest of this pack, byte for byte."
     },
     {
       "provider": "drand (League of Entropy)",
