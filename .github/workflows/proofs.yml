@@ -62,6 +62,10 @@ jobs:
         run: |
           set -euo pipefail
           for pack in packs/*/; do echo "== $pack"; node verify/cli.mjs verify "$pack"; done
+      - name: Independent recalculation (Python, no code shared with the verifier; a difference fails the publication)
+        run: |
+          set -euo pipefail
+          for pack in packs/*/; do echo "== $pack"; python3 recalc/recalculate.py "$pack" --out "/tmp/recalc/$(basename "$pack")" | tail -3; done
 
   prove:
     needs: verify

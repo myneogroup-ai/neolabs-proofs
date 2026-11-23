@@ -1,0 +1,25 @@
+# Independent recalculation of a NEO AI Evaluations edition, on GitLab's own hosted runners.
+# This file is the `.gitlab-ci.yml` of the public GitLab project. It is kept in the public proof repository
+# (recalc/gitlab-ci.yml) and copied to GitLab by its workflow, so both sides show the same text.
+#
+# The job downloads two public files of the edition (manifest.json and the results file it names) from the public
+# proof repository and recomputes every published indicator with recalculate.py, a program that shares no code with
+# the verifier that runs on GitHub. It calls no model and no NEO AI service, and it holds no secret.
+# Start it for an edition with the variable PACK (for example test-3): by the pipeline API, by a schedule, or by hand.
+stages: [recalculate]
+
+recalculate:
+  stage: recalculate
+  image: python:3.12-alpine
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "api" || $CI_PIPELINE_SOURCE == "trigger" || $CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "schedule"'
+  variables:
+    PACK: "test-3"
+    SOURCE: "https://raw.githubusercontent.com/myneogroup-ai/neolabs-proofs/main/packs"
+  script:
+    - 'echo "$PACK" | grep -Eq "^[a-z0-9-]+$"'
+    - python3 recalculate.py "$SOURCE/$PACK" --out "public/$PACK"
+  artifacts:
+    when: always
+    expire_in: never
+    paths: [public/]
