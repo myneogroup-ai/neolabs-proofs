@@ -31,6 +31,10 @@ on:
         description: 'Publish the pack as a PUBLIC Hugging Face dataset (Founder go only): type PUBLIC'
         required: false
         default: 'no'
+      release_doi:
+        description: 'Record the Zenodo DOI of a published GitHub release of this repository as a proof of the pack: the DOI (10.5281/zenodo.N)'
+        required: false
+        default: ''
       preregister:
         description: 'Deposit protocols/<pack>.md in a PUBLIC OSF project, before the test runs (Founder go only): type PUBLIC'
         required: false
@@ -194,6 +198,40 @@ jobs:
           mkdir -p "$pack/proofs"
           node verify/cli.mjs huggingface "$pack" "neo-ai-evaluations-$PACK" public "https://github.com/${{ github.repository }}" > "$pack/proofs/huggingface-record.json"
           node verify/cli.mjs proof "$pack" "$(jq -c '{provider:"Hugging Face (dataset)",group:"provenance",status:"verified",file:"proofs/huggingface-record.json",must_name_manifest_digest:true,url:.url,detail:("The per-task public results as an open dataset: " + .url + ". Every file was read back and has the SHA-256 of the pack.")}' "$pack/proofs/huggingface-record.json")"
+      - name: Zenodo DOI of a published release of this repository
+        # Zenodo archives every GitHub release of this repository by itself (GitHub integration; no token here). This
+        # step reads the public record of the DOI, downloads its archive and checks that it holds this very manifest.
+        if: github.event_name == 'workflow_dispatch' && inputs.release_doi != ''
+        env:
+          DOI: ${{ inputs.release_doi }}
+          PACK: ${{ inputs.pack }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$PACK" | grep -Eq '^[a-z0-9-]+$' && [ -f "packs/$PACK/manifest.json" ] || { echo "packs/$PACK is not an evidence pack"; exit 1; }
+          printf '%s' "$DOI" | grep -Eq '^10\.5281/zenodo\.[0-9]+$' || { echo "Not a Zenodo DOI: $DOI"; exit 1; }
+          pack="packs/$PACK"; provider='Zenodo (release archive, DataCite DOI)'
+          if [ "$(node verify/cli.mjs plan "$pack" "$provider")" = skip ]; then echo "The DOI of this manifest is already recorded."; exit 0; fi
+          node verify/cli.mjs verify "$pack"
+          id="${DOI##*.}"; digest="$(jq -r .manifest_sha256 "$pack/publication-index.json")"
+          curl -fsS --retry 3 --max-time 60 "https://zenodo.org/api/records/$id" -o /tmp/zenodo.json
+          [ "$(jq -r '.doi // .pids.doi.identifier' /tmp/zenodo.json)" = "$DOI" ] || { echo "The record $id is not DOI $DOI"; exit 1; }
+          grep -q "github.com/$REPOSITORY" /tmp/zenodo.json || { echo "The record does not name this repository"; exit 1; }
+          key="$(jq -r '.files[0].key' /tmp/zenodo.json)"; link="$(jq -r '.files[0].links.self' /tmp/zenodo.json)"
+          curl -fsSL --retry 3 --max-time 300 "$link" -o /tmp/zenodo-archive.zip
+          rm -rf /tmp/zenodo-archive && mkdir -p /tmp/zenodo-archive && unzip -q -o /tmp/zenodo-archive.zip -d /tmp/zenodo-archive
+          inside="$(find /tmp/zenodo-archive -path "*/packs/$PACK/manifest.json" | head -1)"
+          [ -n "$inside" ] || { echo "The archive holds no packs/$PACK/manifest.json"; exit 1; }
+          cmp "$inside" "$pack/manifest.json" || { echo "The manifest in the archive is not the manifest of this pack"; exit 1; }
+          mkdir -p "$pack/proofs"
+          jq -n --arg doi "$DOI" --arg id "$id" --arg digest "$digest" --arg key "$key" \
+            --arg release "$(grep -o "github.com/$REPOSITORY/tree/[A-Za-z0-9._-]*" /tmp/zenodo.json | head -1 | sed 's#.*/tree/##')" \
+            --arg archive "$(sha256sum /tmp/zenodo-archive.zip | cut -d' ' -f1)" --arg file "$(sha256sum "$pack/manifest.json" | cut -d' ' -f1)" \
+            --arg at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            '{doi:$doi,url:("https://doi.org/"+$doi),record:("https://zenodo.org/records/"+$id),release:$release,archive:{name:$key,sha256:$archive},manifest_sha256:$digest,manifest_file_sha256:$file,checked_at:$at}' \
+            > "$pack/proofs/zenodo-release-record.json"
+          node verify/cli.mjs proof "$pack" "$(jq -c '{provider:"Zenodo (release archive, DataCite DOI)",group:"provenance",status:"verified",file:"proofs/zenodo-release-record.json",must_name_manifest_digest:true,doi:.doi,url:.url,checked_at:.checked_at,detail:("Release " + .release + " of this repository is archived by Zenodo under DOI " + .doi + ". The archive was downloaded and holds the manifest of this pack, byte for byte.")}' "$pack/proofs/zenodo-release-record.json")"
+          cat "$pack/proofs/zenodo-release-record.json" | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Protocol of a test in a public OSF project, before the test (Founder go only)
         # The protocol is a file of this repository (protocols/<pack>.md), so it is also time-stamped by the steps
         # above. The project is public; the frozen registration is made from it by a person in OSF.
