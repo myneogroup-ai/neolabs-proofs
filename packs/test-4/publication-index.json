@@ -1,7 +1,7 @@
 {
   "schema": "neolabs.publication-index/1",
   "manifest_sha256": "ba43d28134ab81764b9e642df31c6b517be79022c39a7209d90f18cbc42afd41",
-  "updated_at": "2026-11-23T23:59:25Z",
+  "updated_at": "2026-11-24T00:29:40.260Z",
   "proofs": [
     {
       "provider": "FreeTSA",
@@ -21,6 +21,27 @@
       "must_name_manifest_digest": true,
       "url": "https://huggingface.co/datasets/NEOTECHLABS/neo-ai-evaluations-test-4",
       "detail": "The per-task public results as an open dataset: https://huggingface.co/datasets/NEOTECHLABS/neo-ai-evaluations-test-4. Every file was read back and has the SHA-256 of the pack."
+    },
+    {
+      "provider": "Internet Archive",
+      "group": "provenance",
+      "status": "verified",
+      "external_id": "neo-ai-evaluations-test-4",
+      "file": "proofs/internet-archive-record.json",
+      "must_name_manifest_digest": true,
+      "url": "https://archive.org/details/neo-ai-evaluations-test-4",
+      "checked_at": "2026-11-24T00:29:25.169Z",
+      "detail": "The report PDF, the manifest and the per-task results of this edition are a public item of the Internet Archive. Every file was downloaded again from the item and has the SHA-256 of the official file."
+    },
+    {
+      "provider": "Kaggle (dataset)",
+      "group": "provenance",
+      "status": "verified",
+      "file": "proofs/kaggle-record.json",
+      "must_name_manifest_digest": true,
+      "url": "https://www.kaggle.com/datasets/neotechlabs/neo-ai-evaluations-test-4",
+      "checked_at": "2026-11-24T00:29:40Z",
+      "detail": "The per-task public results, their data dictionary, the manifest and the report PDF as a public Kaggle dataset: https://www.kaggle.com/datasets/neotechlabs/neo-ai-evaluations-test-4. The results, the manifest and the PDF were downloaded again and have the SHA-256 of the official files."
     },
     {
       "provider": "OpenTimestamps (Bitcoin)",
