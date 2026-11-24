@@ -1,10 +1,25 @@
 {
-  "title": "NEO AI Evaluations - evidence packs and public verifier (Official Test No. 3)",
+  "title": "NEO AI Evaluations - evidence packs and public verifier",
   "upload_type": "dataset",
-  "creators": [{ "name": "NEO TECH LABS TECHNOLOGY L.L.C." }],
-  "description": "<p>Evidence packs of the official tests of LILI, the AI system of NEO AI, and the public verifier that recomputes their published figures.</p><p>Official Test No. 3 (22 November 2026): 99 tasks with one known answer, five systems, 495 answers. The protocol and its two thresholds were published and time-stamped before the run; the results are sealed in a hash-chained ledger and time-stamped by third parties; the per-task results are public, and ten tasks drawn by a public source of randomness are published in full.</p><p>Verifiable by anyone: <code>node verify/cli.mjs verify packs/test-3</code>. The pack attests the integrity and the dates of the published files and lets a reader recompute every published figure; it does not prove how the run was conducted. No external party has supervised, reproduced or audited the tests.</p>",
+  "creators": [
+    {
+      "name": "NEO TECH LABS TECHNOLOGY L.L.C."
+    }
+  ],
+  "description": "<p>Evidence packs of the official tests of LILI, the AI system of NEO AI, and the public verifier that recomputes their published figures.</p><p>Each release archives the repository as it stood when the evidence pack of an official test was complete: the protocol and its targets, published and time-stamped before the run; the results, sealed in a hash-chained ledger and time-stamped by third parties; the per-task results; and the tasks drawn by a public source of randomness, published in full. The tag of the release names the test (for example test-4-2026-11-23 for Official Test No. 4).</p><p>Verifiable by anyone: <code>node verify/cli.mjs verify packs/&lt;test&gt;</code>. A pack attests the integrity and the dates of the published files and lets a reader recompute every published figure; it does not prove how the run was conducted. No external party has supervised, reproduced or audited the tests.</p>",
   "license": "cc-by-4.0",
-  "keywords": ["AI evaluation", "LLM", "benchmark", "evidence pack", "preregistration", "RFC 3161", "Sigstore", "OpenTimestamps", "drand", "Merkle tree"],
+  "keywords": [
+    "AI evaluation",
+    "LLM",
+    "benchmark",
+    "evidence pack",
+    "preregistration",
+    "RFC 3161",
+    "Sigstore",
+    "OpenTimestamps",
+    "drand",
+    "Merkle tree"
+  ],
   "access_right": "open",
   "language": "eng",
   "notes": "Software (verify/, the workflow) is under the MIT licence; the data of the evidence packs are under CC BY 4.0. Publisher: NEO TECH LABS TECHNOLOGY L.L.C."
